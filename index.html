@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>積動城市 - 戰鬥數位裁判台</title>
+    <style>
+        body { background: #1a1a1a; color: #fff; font-family: "Microsoft JhengHei", sans-serif; padding: 20px; }
+        .unit-card { border: 2px solid #00ff00; padding: 15px; border-radius: 10px; background: #222; margin-bottom: 20px; }
+        .hp-bar { width: 100%; height: 20px; background: #444; border-radius: 10px; overflow: hidden; margin: 10px 0; }
+        .hp-inner { width: 100%; height: 100%; background: #ff3333; transition: width 0.3s; }
+        button { background: #444; color: white; border: 1px solid #666; padding: 10px; margin: 5px; cursor: pointer; border-radius: 5px; }
+        button:hover { background: #00ff00; color: #000; }
+        .log { background: #000; padding: 10px; border: 1px solid #333; height: 150px; overflow-y: scroll; font-size: 14px; color: #0f0; }
+    </style>
+</head>
+<body>
+
+    <h2>🛡️ 積動城市：數位裁判台</h2>
+
+    <div class="unit-card">
+        <h3>敵方角色 (例如：魏延)</h3>
+        <div class="hp-bar"><div id="enemy-hp-bar" class="hp-inner"></div></div>
+        <p>血量: <span id="enemy-hp-text">1000</span> / 1000</p>
+        <p>狀態: <span id="enemy-status">正常</span></p>
+    </div>
+
+    <hr>
+
+    <div class="unit-card" style="border-color: #00acee;">
+        <h3>我方：英國遊騎兵小隊</h3>
+        <p>場上遊騎兵數量：
+            <select id="ranger-count">
+                <option value="1">1 隻</option>
+                <option value="2">2 隻</option>
+                <option value="3">3 隻</option>
+                <option value="4">4 隻</option>
+            </select>
+        </p>
+        
+        <button onclick="attack('precision')">🎯 精準射擊 (100 點/無視避開)</button>
+        <button onclick="attack('barrage')">🔫 槍林彈雨 (150 點 x 數量)</button>
+        <button onclick="addLog('遊騎兵使用了疾風步伐，進入閃避狀態！')">🍃 疾風步伐 (防禦)</button>
+    </div>
+
+    <h4>戰鬥紀錄：</h4>
+    <div id="combat-log" class="log">系統就緒...等待指令。</div>
+
+    <script>
+        let enemyHP = 1000;
+        let maxHP = 1000;
+
+        function attack(type) {
+            let damage = 0;
+            let logMsg = "";
+            let count = parseInt(document.getElementById('ranger-count').value);
+
+            if (type === 'precision') {
+                damage = 100;
+                logMsg = `遊騎兵發動【精準射擊】，造成 ${damage} 點真實傷害！`;
+            } else if (type === 'barrage') {
+                damage = 150 * count;
+                logMsg = `遊騎兵發動【槍林彈雨】，場上 ${count} 隻遊騎兵連動，共造成 ${damage} 點傷害！`;
+            }
+
+            enemyHP -= damage;
+            if (enemyHP < 0) enemyHP = 0;
+
+            updateUI(logMsg);
+        }
+
+        function updateUI(msg) {
+            document.getElementById('enemy-hp-text').innerText = enemyHP;
+            let percent = (enemyHP / maxHP) * 100;
+            document.getElementById('enemy-hp-bar').style.width = percent + "%";
+            addLog(msg);
+        }
+
+        function addLog(msg) {
+            let log = document.getElementById('combat-log');
+            log.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}<br>` + log.innerHTML;
+        }
+    </script>
+</body>
+</html>
