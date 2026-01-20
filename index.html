@@ -2,387 +2,227 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>積動城市 SPARK - 數位對戰裁判台</title>
+    <title>積動城市 SPARK - 數位裁判系統 v2.3</title>
     <style>
-        :root { 
-            --p1-bg: #0d1b2a; --p1-accent: #00acee; 
-            --p2-bg: #2b0d0d; --p2-accent: #ff4444; 
-            --text-color: #e0e1dd;
-        }
-        body { 
-            background: #000; color: var(--text-color); 
-            font-family: "Microsoft JhengHei", sans-serif; 
-            margin: 0; padding: 10px; display: flex; flex-direction: column; height: 100vh;
-        }
-
-        /* 頂部資訊列 */
-        header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 10px; border-bottom: 2px solid #333; 
-        }
-        .turn-badge { 
-            font-size: 1.5rem; background: #f1c40f; color: #000; 
-            padding: 5px 20px; border-radius: 20px; font-weight: bold; 
-        }
-
-        /* 戰場區域 */
-        .battlefield { 
-            display: flex; flex: 1; gap: 10px; margin-top: 10px; overflow: hidden;
-        }
-        .side { 
-            flex: 1; padding: 10px; border-radius: 10px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto;
-        }
+        :root { --p1-bg: #0d1b2a; --p1-accent: #00acee; --p2-bg: #2b0d0d; --p2-accent: #ff4444; --text-color: #e0e1dd; }
+        body { background: #000; color: var(--text-color); font-family: "Microsoft JhengHei", sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; height: 100vh; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 2px solid #333; }
+        .turn-badge { font-size: 1.5rem; background: #f1c40f; color: #000; padding: 5px 20px; border-radius: 20px; font-weight: bold; }
+        .battlefield { display: flex; flex: 1; gap: 10px; margin-top: 10px; overflow: hidden; }
+        .side { flex: 1; padding: 10px; border-radius: 10px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
         #side-p1 { background: var(--p1-bg); border: 2px solid var(--p1-accent); }
         #side-p2 { background: var(--p2-bg); border: 2px solid var(--p2-accent); }
-
-        /* 角色卡片 (Slot) */
-        .slot { 
-            background: rgba(255,255,255,0.05); border: 1px dashed #555; 
-            border-radius: 8px; min-height: 100px; display: flex; 
-            flex-direction: column; justify-content: center; align-items: center; position: relative;
-        }
-        
-        /* 當角色存在時的樣式 */
+        .slot { background: rgba(255,255,255,0.05); border: 1px dashed #555; border-radius: 8px; min-height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
         .char-card { width: 100%; padding: 10px; box-sizing: border-box; }
-        .char-header { display: flex; justify-content: space-between; align-items: center; }
         .char-name { font-weight: bold; font-size: 1.1em; color: #fff; }
-        
-        /* 血條 */
+        .status-tag { background: #e67e22; color: #fff; font-size: 0.7rem; padding: 2px 5px; border-radius: 3px; margin-left: 5px; }
+        .status-tag.weak { background: #9b59b6; } /* 虛弱狀態用紫色 */
         .hp-container { width: 100%; background: #333; height: 10px; border-radius: 5px; margin: 5px 0; overflow: hidden; }
         .hp-fill { height: 100%; background: #2ecc71; width: 100%; transition: width 0.3s; }
-        
-        /* 技能按鈕區 */
         .skill-list { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 5px; }
-        .skill-btn { 
-            background: #444; color: #fff; border: 1px solid #666; 
-            padding: 5px; font-size: 0.8rem; cursor: pointer; border-radius: 4px;
-        }
+        .skill-btn { background: #444; color: #fff; border: 1px solid #666; padding: 5px; font-size: 0.8rem; cursor: pointer; border-radius: 4px; }
         .skill-btn:hover { background: #666; }
-
-        /* 狀態樣式 */
         .slot.acted { opacity: 0.5; filter: grayscale(0.8); pointer-events: none; }
-        .slot.targetable { border: 2px solid #f1c40f; box-shadow: 0 0 10px #f1c40f; cursor: crosshair; animation: pulse 1s infinite; }
-        .slot.dead { filter: grayscale(1); opacity: 0.3; border-color: #333; }
-
-        /* 加入角色按鈕 */
-        .add-btn { 
-            background: transparent; color: #777; border: none; font-size: 2rem; cursor: pointer; 
-        }
-        .add-interface { width: 90%; display: none; flex-direction: column; gap: 5px; }
-        
-        /* 底部控制區 & Log */
+        .slot.targetable { border: 2px solid #f1c40f; box-shadow: 0 0 15px #f1c40f; cursor: crosshair; animation: pulse 0.8s infinite; }
+        .slot.dead { filter: grayscale(1); opacity: 0.3; }
         .control-panel { height: 150px; display: flex; gap: 10px; margin-top: 10px; }
         .log-box { flex: 3; background: #111; border: 1px solid #333; padding: 10px; overflow-y: scroll; font-family: monospace; color: #0f0; font-size: 0.9rem; }
         .main-btn { flex: 1; background: #f1c40f; color: #000; border: none; font-size: 1.2rem; font-weight: bold; cursor: pointer; border-radius: 5px; }
-        
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+        .add-btn { background: transparent; color: #777; border: none; font-size: 2rem; cursor: pointer; }
+        .add-interface { width: 90%; display: none; flex-direction: column; gap: 5px; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
     </style>
 </head>
 <body>
 
 <header>
-    <div>
-        <h2 style="margin:0;">SPARK 積動城市</h2>
-        <small>數位裁判系統 v2.0</small>
+    <div><h2 style="margin:0;">SPARK 積動城市</h2><small>數位裁判台 v2.3 (三國武將錄入)</small></div>
+    <div style="text-align: right">
+        <div class="turn-badge">第 <span id="turn-count">1</span> 回合</div>
+        <div id="link-count-display" style="color: #00acee; font-size: 0.8rem; margin-top: 5px;">本回合遊騎兵連動次數：0 / 2</div>
     </div>
-    <div class="turn-badge">第 <span id="turn-count">1</span> 回合</div>
 </header>
 
 <div class="battlefield">
-    <div class="side" id="side-p1">
-        <h3 style="margin:0; text-align:center; color:var(--p1-accent)">我方隊伍</h3>
-        </div>
-
-    <div class="side" id="side-p2">
-        <h3 style="margin:0; text-align:center; color:var(--p2-accent)">敵方隊伍</h3>
-        </div>
+    <div class="side" id="side-p1"><h3 style="margin:0; text-align:center; color:var(--p1-accent)">我方隊伍</h3></div>
+    <div class="side" id="side-p2"><h3 style="margin:0; text-align:center; color:var(--p2-accent)">敵方隊伍</h3></div>
 </div>
 
 <div class="control-panel">
-    <div class="log-box" id="combat-log">
-        > 系統就緒。<br>
-        > 請點擊「+」號配置雙方角色。<br>
-    </div>
+    <div class="log-box" id="combat-log">> 系統就緒。</div>
     <button class="main-btn" onclick="nextTurn()">結束回合<br>Next Turn</button>
 </div>
 
 <datalist id="char-list-data"></datalist>
 
 <script>
-    // ==========================================
-    // 1. 角色大數據庫 (在這裡新增你的角色！)
-    // ==========================================
+    // 1. 角色大數據庫
     const characterDatabase = [
         {
-            id: "ranger_blue",
-            name: "英國遊騎兵",
-            hp: 500,
+            id: "ranger", name: "英國遊騎兵", hp: 500, tag: "ranger",
             skills: [
-                { name: "精準射擊", damage: 100, type: "true_dmg", desc: "真實傷害" },
-                { name: "槍林彈雨", damage: 150, type: "aoe_trigger", desc: "觸發連動" },
-                { name: "疾風步伐", damage: 0, type: "buff", desc: "閃避狀態" }
+                { name: "精準射擊", damage: 100, type: "true_dmg" },
+                { name: "槍林彈雨", damage: 150, type: "ranger_link" },
+                { name: "疾風步伐", damage: 0, type: "self_buff", effect: "dodge" }
             ]
         },
         {
-            id: "wei_yan",
-            name: "魏延 (吞食天地)",
-            hp: 1000,
+            id: "guan_yu", name: "關羽", hp: 1200, tag: "general",
             skills: [
-                { name: "斬月閃", damage: 150, type: "physical", desc: "強力斬擊" },
-                { name: "狂暴", damage: 0, type: "buff", desc: "攻擊力提升" }
+                { name: "青龍偃月", damage: 200, type: "physical" },
+                { name: "武聖威嚴", damage: 0, type: "enemy_debuff", effect: "weak" }
             ]
         },
         {
-            id: "guan_yu",
-            name: "關羽",
-            hp: 1200,
-            skills: [
-                { name: "青龍偃月", damage: 200, type: "physical", desc: "高額傷害" },
-                { name: "武聖威嚴", damage: 0, type: "debuff", desc: "敵方降攻" }
-            ]
+            id: "wei_yan", name: "魏延", hp: 1000, tag: "general",
+            skills: [{ name: "斬月閃", damage: 150, type: "physical" }]
         },
         {
-            id: "soldier_a",
-            name: "一般小兵",
-            hp: 200,
-            skills: [
-                { name: "突刺", damage: 50, type: "physical", desc: "普通攻擊" }
-            ]
+            id: "soldier_a", name: "一般小兵", hp: 200, tag: "mob",
+            skills: [{ name: "突刺", damage: 50, type: "physical" }]
         }
     ];
 
-    // ==========================================
-    // 2. 系統核心邏輯
-    // ==========================================
-    
-    // 初始化戰場狀態 (5對5)
-    let battlefield = {
-        p1: [null, null, null, null, null], // 我方 5 格
-        p2: [null, null, null, null, null]  // 敵方 5 格
-    };
-    
+    let battlefield = { p1: [null, null, null, null, null], p2: [null, null, null, null, null] };
     let currentTurn = 1;
-    let pendingAction = null; // 暫存目前的攻擊指令 { attackerSide, attackerIndex, skill }
+    let pendingAction = null;
+    let rangerLinkUsedCount = 0;
 
-    // 初始化：生成下拉選單資料 與 戰場格子
-    window.onload = function() {
-        initDatalist();
-        renderBattlefield();
-    };
+    window.onload = function() { initDatalist(); renderBattlefield(); };
 
     function initDatalist() {
         const list = document.getElementById('char-list-data');
         characterDatabase.forEach(char => {
             const option = document.createElement('option');
-            option.value = char.name; // 搜尋時顯示的文字
+            option.value = char.name;
             list.appendChild(option);
         });
     }
 
-    // 渲染戰場 (核心功能)
     function renderBattlefield() {
         renderSide('p1', document.getElementById('side-p1'));
         renderSide('p2', document.getElementById('side-p2'));
+        document.getElementById('link-count-display').innerText = `本回合遊騎兵聯動次數：${rangerLinkUsedCount} / 2`;
     }
 
     function renderSide(sideKey, container) {
-        // 保留標題，清空內容
         const title = container.querySelector('h3');
         container.innerHTML = '';
         container.appendChild(title);
-
         battlefield[sideKey].forEach((char, index) => {
             const slotDiv = document.createElement('div');
             slotDiv.className = `slot`;
             slotDiv.dataset.side = sideKey;
             slotDiv.dataset.index = index;
-
-            // 1. 如果格子是空的 -> 顯示加入按鈕
             if (!char) {
-                slotDiv.innerHTML = `
-                    <button class="add-btn" onclick="toggleAddMenu('${sideKey}', ${index})">+</button>
-                    <div class="add-interface" id="add-menu-${sideKey}-${index}">
-                        <input list="char-list-data" placeholder="輸入角色名稱..." id="input-${sideKey}-${index}">
-                        <button onclick="addCharacter('${sideKey}', ${index})">確認</button>
-                    </div>
-                `;
-            } 
-            // 2. 如果格子有角色
-            else {
+                slotDiv.innerHTML = `<button class="add-btn" onclick="toggleAddMenu('${sideKey}', ${index})">+</button><div class="add-interface" id="add-menu-${sideKey}-${index}"><input list="char-list-data" placeholder="角色..." id="input-${sideKey}-${index}"><button onclick="addCharacter('${sideKey}', ${index})">OK</button></div>`;
+            } else {
                 if (char.hp <= 0) slotDiv.classList.add('dead');
                 if (char.acted) slotDiv.classList.add('acted');
-                
                 const hpPercent = (char.hp / char.maxHp) * 100;
-                
-                let skillsHtml = '';
-                char.skills.forEach((skill, sIdx) => {
-                    skillsHtml += `<button class="skill-btn" onclick="selectSkill('${sideKey}', ${index}, ${sIdx})">${skill.name}</button>`;
-                });
-
-                slotDiv.innerHTML = `
-                    <div class="char-card">
-                        <div class="char-header">
-                            <span class="char-name">${char.name}</span>
-                            <small onclick="removeChar('${sideKey}', ${index})" style="cursor:pointer;color:#555">❌</small>
-                        </div>
-                        <div class="hp-container">
-                            <div class="hp-fill" style="width: ${hpPercent}%"></div>
-                        </div>
-                        <small>HP: ${char.hp} / ${char.maxHp}</small>
-                        <div class="skill-list">${skillsHtml}</div>
-                    </div>
-                `;
-
-                // 綁定「被攻擊」的點擊事件 (如果正在選目標)
-                slotDiv.onclick = function(e) {
-                    // 防止點擊技能按鈕時觸發
-                    if(e.target.tagName === 'BUTTON') return;
-                    if(pendingAction && slotDiv.classList.contains('targetable')) {
-                        resolveAttack(sideKey, index);
-                    }
-                }
+                let statusHtml = char.statuses.map(s => `<span class="status-tag ${s}">${s === 'weak' ? '虛弱' : s}</span>`).join('');
+                let skillsHtml = char.skills.map((s, sIdx) => `<button class="skill-btn" onclick="selectSkill('${sideKey}', ${index}, ${sIdx})">${s.name}</button>`).join('');
+                slotDiv.innerHTML = `<div class="char-card"><div class="char-header"><span class="char-name">${char.name}${statusHtml}</span><small onclick="removeChar('${sideKey}', ${index})" style="cursor:pointer">❌</small></div><div class="hp-container"><div class="hp-fill" style="width: ${hpPercent}%"></div></div><small>HP: ${char.hp}/${char.maxHp}</small><div class="skill-list">${skillsHtml}</div></div>`;
+                slotDiv.onclick = function(e) { if(e.target.tagName !== 'BUTTON' && pendingAction && slotDiv.classList.contains('targetable')) resolveAttack(sideKey, index); }
             }
             container.appendChild(slotDiv);
         });
     }
 
-    // ==========================================
-    // 3. 角色管理 (新增/刪除)
-    // ==========================================
-
-    function toggleAddMenu(side, index) {
-        const menu = document.getElementById(`add-menu-${side}-${index}`);
-        menu.style.display = 'flex';
-        menu.querySelector('input').focus();
-    }
-
+    function toggleAddMenu(side, index) { document.getElementById(`add-menu-${side}-${index}`).style.display = 'flex'; }
     function addCharacter(side, index) {
         const inputVal = document.getElementById(`input-${side}-${index}`).value;
-        // 從資料庫找角色
         const template = characterDatabase.find(c => c.name === inputVal);
-        
-        if (!template) {
-            alert("找不到該角色，請確認資料庫或名稱！");
-            return;
-        }
-
-        // 複製一份新的角色物件 (Deep Copy)，避免互相影響
+        if (!template) return;
         battlefield[side][index] = JSON.parse(JSON.stringify(template));
-        battlefield[side][index].maxHp = template.hp; // 設定最大血量
-        battlefield[side][index].acted = false; // 初始化行動狀態
-
-        addLog(`[系統] ${template.name} 加入了戰場 (位置: ${side}-${index+1})`);
+        battlefield[side][index].maxHp = template.hp; battlefield[side][index].acted = false; battlefield[side][index].statuses = [];
         renderBattlefield();
     }
-
-    function removeChar(side, index) {
-        if(confirm("確定要移除這隻角色嗎？")) {
-            battlefield[side][index] = null;
-            renderBattlefield();
-        }
-    }
-
-    // ==========================================
-    // 4. 戰鬥核心：技能與指定攻擊
-    // ==========================================
+    function removeChar(side, index) { battlefield[side][index] = null; renderBattlefield(); }
 
     function selectSkill(side, index, skillIndex) {
         const actor = battlefield[side][index];
         const skill = actor.skills[skillIndex];
+        if (actor.hp <= 0 || actor.acted) return;
 
-        if (actor.hp <= 0) return alert("該角色已陣亡");
-        if (actor.acted) return alert("本回合已行動過");
+        if (skill.type === "ranger_link" && rangerLinkUsedCount >= 2) {
+            addLog(`⚠️ 聯動次數已達上限！`); return;
+        }
 
-        // 設定暫存動作
-        pendingAction = {
-            side: side,
-            index: index,
-            skill: skill,
-            actorName: actor.name
-        };
+        if (skill.type === 'self_buff') {
+            actor.statuses.push(skill.effect); actor.acted = true;
+            addLog(`[技能] ${actor.name} 使用了 【${skill.name}】！`);
+            renderBattlefield(); return;
+        }
 
-        addLog(`[準備] ${actor.name} 準備使用 【${skill.name}】，請點選目標！`);
-
-        // 高亮顯示所有合法的敵方目標
-        const enemySide = (side === 'p1') ? 'p2' : 'p1';
-        highlightTargets(enemySide);
+        pendingAction = { side, index, skill, actorName: actor.name };
+        addLog(`[準備] ${actor.name} 發動 ${skill.name}，請點選目標。`);
+        highlightTargets(side === 'p1' ? 'p2' : 'p1');
     }
 
     function highlightTargets(targetSide) {
-        // 移除舊的高亮
-        document.querySelectorAll('.slot').forEach(el => el.classList.remove('targetable'));
-
-        // 找出所有活著的敵方格子
         document.querySelectorAll(`.slot[data-side="${targetSide}"]`).forEach(el => {
-            const idx = el.dataset.index;
-            const char = battlefield[targetSide][idx];
-            if (char && char.hp > 0) {
-                el.classList.add('targetable');
-            }
+            const char = battlefield[targetSide][el.dataset.index];
+            if (char && char.hp > 0) el.classList.add('targetable');
         });
     }
 
     function resolveAttack(targetSide, targetIndex) {
         if (!pendingAction) return;
-
+        const actor = battlefield[pendingAction.side][pendingAction.index];
         const target = battlefield[targetSide][targetIndex];
         const skill = pendingAction.skill;
-        const damage = skill.damage;
+        
+        let finalDamage = skill.damage;
 
-        // 1. 扣血邏輯
-        target.hp -= damage;
-        if (target.hp < 0) target.hp = 0;
-
-        // 2. 標記發動者為「已行動」
-        battlefield[pendingAction.side][pendingAction.index].acted = true;
-
-        // 3. 紀錄 Log
-        addLog(`⚔️ ${pendingAction.actorName} 對 ${target.name} 使用了【${skill.name}】！`);
-        addLog(`💥 造成 ${damage} 點傷害。 ${target.name} 剩餘 HP: ${target.hp}`);
-
-        if (target.hp === 0) {
-            addLog(`💀 ${target.name} 倒下了！`);
+        // 【邏輯 1】虛弱判定：若攻擊者處於 weak 狀態，傷害減半
+        if (actor.statuses.includes("weak")) {
+            finalDamage = Math.floor(finalDamage * 0.5);
+            addLog(`[虛弱] ${actor.name} 力量衰減，傷害減半！`);
+            // 攻擊後移除虛弱狀態 (消耗型 debuff)
+            actor.statuses = actor.statuses.filter(s => s !== "weak");
         }
 
-        // 4. 清除暫存與高亮
+        // 【邏輯 2】Debuff 施放邏輯：如武聖威嚴
+        if (skill.type === "enemy_debuff") {
+            target.statuses.push(skill.effect);
+            addLog(`[效果] ${target.name} 受 ${skill.name} 影響，進入 ${skill.effect} 狀態！`);
+        }
+
+        // 【邏輯 3】遊騎兵連動
+        if (skill.type === "ranger_link") {
+            const rangerCount = battlefield[pendingAction.side].filter(u => u && u.tag === "ranger" && u.hp > 0).length;
+            finalDamage = 150 * rangerCount;
+            rangerLinkUsedCount++;
+        }
+
+        // 【邏輯 4】閃避判定
+        if (skill.type !== "true_dmg" && target.statuses.includes("dodge")) {
+            finalDamage = 0; target.statuses = target.statuses.filter(s => s !== "dodge");
+            addLog(`[閃避] ${target.name} 避開攻擊！`);
+        }
+
+        target.hp = Math.max(0, target.hp - finalDamage);
+        actor.acted = true;
+        if(finalDamage > 0) addLog(`⚔️ ${actor.name} 對 ${target.name} 造成 ${finalDamage} 傷害。`);
+        
         pendingAction = null;
         document.querySelectorAll('.slot').forEach(el => el.classList.remove('targetable'));
-        
-        // 5. 重新渲染畫面
         renderBattlefield();
     }
 
-    // ==========================================
-    // 5. 回合管理
-    // ==========================================
     function nextTurn() {
-        currentTurn++;
+        currentTurn++; rangerLinkUsedCount = 0;
         document.getElementById('turn-count').innerText = currentTurn;
-        
-        // 重置雙方所有人的 acted 狀態
-        ['p1', 'p2'].forEach(side => {
-            battlefield[side].forEach(char => {
-                if (char) char.acted = false;
-            });
-        });
-
-        addLog(`--- 第 ${currentTurn} 回合開始 ---`);
-        
-        // 清除任何未完成的選取狀態
-        pendingAction = null;
-        document.querySelectorAll('.slot').forEach(el => el.classList.remove('targetable'));
-        
+        ['p1', 'p2'].forEach(side => { battlefield[side].forEach(char => { if (char) char.acted = false; }); });
+        addLog(`--- 第 ${currentTurn} 回合 ---`);
         renderBattlefield();
     }
 
     function addLog(msg) {
         const log = document.getElementById('combat-log');
-        const time = new Date().toLocaleTimeString('zh-TW', { hour12: false });
-        log.innerHTML = `<span>[${time}] ${msg}</span><br>` + log.innerHTML;
+        log.innerHTML = `> ${msg}<br>` + log.innerHTML;
     }
-
 </script>
-
 </body>
 </html>
