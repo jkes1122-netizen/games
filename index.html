@@ -2,115 +2,386 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>積動城市 - 雙方對戰數位裁判系統</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>積動城市 SPARK - 數位對戰裁判台</title>
     <style>
-        :root { --p1-color: #00acee; --p2-color: #ff4444; }
-        body { background: #121212; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; }
-        .battle-field { display: flex; justify-content: space-around; width: 95%; margin-top: 20px; }
-        .side { width: 45%; border: 1px solid #333; padding: 10px; background: #1e1e1e; }
-        .turn-display { font-size: 24px; color: #f1c40f; margin: 20px; font-weight: bold; text-shadow: 0 0 10px #f1c40f; }
-        .char-card { border: 2px solid #444; margin: 10px 0; padding: 10px; border-radius: 8px; position: relative; }
-        .char-card.acted { opacity: 0.5; border-color: #000; background: #111; }
-        .hp-bar { width: 100%; height: 12px; background: #333; border-radius: 6px; overflow: hidden; margin: 5px 0; }
-        .hp-inner { width: 100%; height: 100%; background: #2ecc71; transition: width 0.3s; }
-        .controls { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
-        button { font-size: 12px; padding: 5px; cursor: pointer; background: #333; color: #eee; border: 1px solid #555; }
-        .next-turn-btn { background: #f1c40f; color: #000; font-weight: bold; padding: 15px 40px; font-size: 18px; margin: 20px; border-radius: 30px; }
-        .log-box { width: 90%; background: #000; color: #0f0; padding: 10px; height: 100px; overflow-y: scroll; font-family: monospace; }
+        :root { 
+            --p1-bg: #0d1b2a; --p1-accent: #00acee; 
+            --p2-bg: #2b0d0d; --p2-accent: #ff4444; 
+            --text-color: #e0e1dd;
+        }
+        body { 
+            background: #000; color: var(--text-color); 
+            font-family: "Microsoft JhengHei", sans-serif; 
+            margin: 0; padding: 10px; display: flex; flex-direction: column; height: 100vh;
+        }
+
+        /* 頂部資訊列 */
+        header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 10px; border-bottom: 2px solid #333; 
+        }
+        .turn-badge { 
+            font-size: 1.5rem; background: #f1c40f; color: #000; 
+            padding: 5px 20px; border-radius: 20px; font-weight: bold; 
+        }
+
+        /* 戰場區域 */
+        .battlefield { 
+            display: flex; flex: 1; gap: 10px; margin-top: 10px; overflow: hidden;
+        }
+        .side { 
+            flex: 1; padding: 10px; border-radius: 10px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto;
+        }
+        #side-p1 { background: var(--p1-bg); border: 2px solid var(--p1-accent); }
+        #side-p2 { background: var(--p2-bg); border: 2px solid var(--p2-accent); }
+
+        /* 角色卡片 (Slot) */
+        .slot { 
+            background: rgba(255,255,255,0.05); border: 1px dashed #555; 
+            border-radius: 8px; min-height: 100px; display: flex; 
+            flex-direction: column; justify-content: center; align-items: center; position: relative;
+        }
+        
+        /* 當角色存在時的樣式 */
+        .char-card { width: 100%; padding: 10px; box-sizing: border-box; }
+        .char-header { display: flex; justify-content: space-between; align-items: center; }
+        .char-name { font-weight: bold; font-size: 1.1em; color: #fff; }
+        
+        /* 血條 */
+        .hp-container { width: 100%; background: #333; height: 10px; border-radius: 5px; margin: 5px 0; overflow: hidden; }
+        .hp-fill { height: 100%; background: #2ecc71; width: 100%; transition: width 0.3s; }
+        
+        /* 技能按鈕區 */
+        .skill-list { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 5px; }
+        .skill-btn { 
+            background: #444; color: #fff; border: 1px solid #666; 
+            padding: 5px; font-size: 0.8rem; cursor: pointer; border-radius: 4px;
+        }
+        .skill-btn:hover { background: #666; }
+
+        /* 狀態樣式 */
+        .slot.acted { opacity: 0.5; filter: grayscale(0.8); pointer-events: none; }
+        .slot.targetable { border: 2px solid #f1c40f; box-shadow: 0 0 10px #f1c40f; cursor: crosshair; animation: pulse 1s infinite; }
+        .slot.dead { filter: grayscale(1); opacity: 0.3; border-color: #333; }
+
+        /* 加入角色按鈕 */
+        .add-btn { 
+            background: transparent; color: #777; border: none; font-size: 2rem; cursor: pointer; 
+        }
+        .add-interface { width: 90%; display: none; flex-direction: column; gap: 5px; }
+        
+        /* 底部控制區 & Log */
+        .control-panel { height: 150px; display: flex; gap: 10px; margin-top: 10px; }
+        .log-box { flex: 3; background: #111; border: 1px solid #333; padding: 10px; overflow-y: scroll; font-family: monospace; color: #0f0; font-size: 0.9rem; }
+        .main-btn { flex: 1; background: #f1c40f; color: #000; border: none; font-size: 1.2rem; font-weight: bold; cursor: pointer; border-radius: 5px; }
+        
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
-<div class="turn-display">⚔️ 第 <span id="turn-count">1</span> 回合 ⚔️</div>
-
-<div class="battle-field">
-    <div class="side" id="p1-side" style="border-top: 5px solid var(--p1-color);">
-        <h3 style="color: var(--p1-color)">我方陣營 (SPARK)</h3>
-        <div id="p1-slots"></div>
+<header>
+    <div>
+        <h2 style="margin:0;">SPARK 積動城市</h2>
+        <small>數位裁判系統 v2.0</small>
     </div>
+    <div class="turn-badge">第 <span id="turn-count">1</span> 回合</div>
+</header>
 
-    <div class="side" id="p2-side" style="border-top: 5px solid var(--p2-color);">
-        <h3 style="color: var(--p2-color)">敵方陣營 (Enemy)</h3>
-        <div id="p2-slots"></div>
-    </div>
+<div class="battlefield">
+    <div class="side" id="side-p1">
+        <h3 style="margin:0; text-align:center; color:var(--p1-accent)">我方隊伍</h3>
+        </div>
+
+    <div class="side" id="side-p2">
+        <h3 style="margin:0; text-align:center; color:var(--p2-accent)">敵方隊伍</h3>
+        </div>
 </div>
 
-<button class="next-turn-btn" onclick="nextTurn()">結束本回合 / 下一回合</button>
+<div class="control-panel">
+    <div class="log-box" id="combat-log">
+        > 系統就緒。<br>
+        > 請點擊「+」號配置雙方角色。<br>
+    </div>
+    <button class="main-btn" onclick="nextTurn()">結束回合<br>Next Turn</button>
+</div>
 
-<div class="log-box" id="combat-log">戰鬥初始化完成... 請開始行動。</div>
+<datalist id="char-list-data"></datalist>
 
 <script>
-    let currentTurn = 1;
-    let units = [
-        { id: 0, team: 1, name: "遊騎兵 A", hp: 500, maxHp: 500, acted: false },
-        { id: 1, team: 1, name: "遊騎兵 B", hp: 500, maxHp: 500, acted: false },
-        { id: 2, team: 1, name: "遊騎兵 C", hp: 500, maxHp: 500, acted: false },
-        { id: 3, team: 2, name: "魏延", hp: 1000, maxHp: 1000, acted: false },
-        { id: 4, team: 2, name: "敵方小兵 A", hp: 300, maxHp: 300, acted: false },
-        { id: 5, team: 2, name: "敵方小兵 B", hp: 300, maxHp: 300, acted: false }
+    // ==========================================
+    // 1. 角色大數據庫 (在這裡新增你的角色！)
+    // ==========================================
+    const characterDatabase = [
+        {
+            id: "ranger_blue",
+            name: "英國遊騎兵",
+            hp: 500,
+            skills: [
+                { name: "精準射擊", damage: 100, type: "true_dmg", desc: "真實傷害" },
+                { name: "槍林彈雨", damage: 150, type: "aoe_trigger", desc: "觸發連動" },
+                { name: "疾風步伐", damage: 0, type: "buff", desc: "閃避狀態" }
+            ]
+        },
+        {
+            id: "wei_yan",
+            name: "魏延 (吞食天地)",
+            hp: 1000,
+            skills: [
+                { name: "斬月閃", damage: 150, type: "physical", desc: "強力斬擊" },
+                { name: "狂暴", damage: 0, type: "buff", desc: "攻擊力提升" }
+            ]
+        },
+        {
+            id: "guan_yu",
+            name: "關羽",
+            hp: 1200,
+            skills: [
+                { name: "青龍偃月", damage: 200, type: "physical", desc: "高額傷害" },
+                { name: "武聖威嚴", damage: 0, type: "debuff", desc: "敵方降攻" }
+            ]
+        },
+        {
+            id: "soldier_a",
+            name: "一般小兵",
+            hp: 200,
+            skills: [
+                { name: "突刺", damage: 50, type: "physical", desc: "普通攻擊" }
+            ]
+        }
     ];
 
-    function renderUnits() {
-        document.getElementById('p1-slots').innerHTML = '';
-        document.getElementById('p2-slots').innerHTML = '';
-        
-        units.forEach(u => {
-            const card = document.createElement('div');
-            card.className = `char-card ${u.acted ? 'acted' : ''}`;
-            const hpPercent = (u.hp / u.maxHp) * 100;
-            
-            card.innerHTML = `
-                <strong>${u.name}</strong> (HP: ${u.hp}/${u.maxHp})
-                <div class="hp-bar"><div class="hp-inner" style="width: ${hpPercent}%"></div></div>
-                <div class="controls">
-                    <button onclick="takeAction(${u.id}, 100, '攻擊')">一般攻擊</button>
-                    <button onclick="takeAction(${u.id}, 0, '防禦')">防禦/技能</button>
-                    <button onclick="heal(${u.id}, 50)">補血</button>
-                </div>
-            `;
-            
-            if (u.team === 1) document.getElementById('p1-slots').appendChild(card);
-            else document.getElementById('p2-slots').appendChild(card);
+    // ==========================================
+    // 2. 系統核心邏輯
+    // ==========================================
+    
+    // 初始化戰場狀態 (5對5)
+    let battlefield = {
+        p1: [null, null, null, null, null], // 我方 5 格
+        p2: [null, null, null, null, null]  // 敵方 5 格
+    };
+    
+    let currentTurn = 1;
+    let pendingAction = null; // 暫存目前的攻擊指令 { attackerSide, attackerIndex, skill }
+
+    // 初始化：生成下拉選單資料 與 戰場格子
+    window.onload = function() {
+        initDatalist();
+        renderBattlefield();
+    };
+
+    function initDatalist() {
+        const list = document.getElementById('char-list-data');
+        characterDatabase.forEach(char => {
+            const option = document.createElement('option');
+            option.value = char.name; // 搜尋時顯示的文字
+            list.appendChild(option);
         });
     }
 
-    function takeAction(id, dmg, actionName) {
-        const actor = units.find(u => u.id === id);
-        if (actor.acted) return alert("該單位本回合已行動過！");
+    // 渲染戰場 (核心功能)
+    function renderBattlefield() {
+        renderSide('p1', document.getElementById('side-p1'));
+        renderSide('p2', document.getElementById('side-p2'));
+    }
+
+    function renderSide(sideKey, container) {
+        // 保留標題，清空內容
+        const title = container.querySelector('h3');
+        container.innerHTML = '';
+        container.appendChild(title);
+
+        battlefield[sideKey].forEach((char, index) => {
+            const slotDiv = document.createElement('div');
+            slotDiv.className = `slot`;
+            slotDiv.dataset.side = sideKey;
+            slotDiv.dataset.index = index;
+
+            // 1. 如果格子是空的 -> 顯示加入按鈕
+            if (!char) {
+                slotDiv.innerHTML = `
+                    <button class="add-btn" onclick="toggleAddMenu('${sideKey}', ${index})">+</button>
+                    <div class="add-interface" id="add-menu-${sideKey}-${index}">
+                        <input list="char-list-data" placeholder="輸入角色名稱..." id="input-${sideKey}-${index}">
+                        <button onclick="addCharacter('${sideKey}', ${index})">確認</button>
+                    </div>
+                `;
+            } 
+            // 2. 如果格子有角色
+            else {
+                if (char.hp <= 0) slotDiv.classList.add('dead');
+                if (char.acted) slotDiv.classList.add('acted');
+                
+                const hpPercent = (char.hp / char.maxHp) * 100;
+                
+                let skillsHtml = '';
+                char.skills.forEach((skill, sIdx) => {
+                    skillsHtml += `<button class="skill-btn" onclick="selectSkill('${sideKey}', ${index}, ${sIdx})">${skill.name}</button>`;
+                });
+
+                slotDiv.innerHTML = `
+                    <div class="char-card">
+                        <div class="char-header">
+                            <span class="char-name">${char.name}</span>
+                            <small onclick="removeChar('${sideKey}', ${index})" style="cursor:pointer;color:#555">❌</small>
+                        </div>
+                        <div class="hp-container">
+                            <div class="hp-fill" style="width: ${hpPercent}%"></div>
+                        </div>
+                        <small>HP: ${char.hp} / ${char.maxHp}</small>
+                        <div class="skill-list">${skillsHtml}</div>
+                    </div>
+                `;
+
+                // 綁定「被攻擊」的點擊事件 (如果正在選目標)
+                slotDiv.onclick = function(e) {
+                    // 防止點擊技能按鈕時觸發
+                    if(e.target.tagName === 'BUTTON') return;
+                    if(pendingAction && slotDiv.classList.contains('targetable')) {
+                        resolveAttack(sideKey, index);
+                    }
+                }
+            }
+            container.appendChild(slotDiv);
+        });
+    }
+
+    // ==========================================
+    // 3. 角色管理 (新增/刪除)
+    // ==========================================
+
+    function toggleAddMenu(side, index) {
+        const menu = document.getElementById(`add-menu-${side}-${index}`);
+        menu.style.display = 'flex';
+        menu.querySelector('input').focus();
+    }
+
+    function addCharacter(side, index) {
+        const inputVal = document.getElementById(`input-${side}-${index}`).value;
+        // 從資料庫找角色
+        const template = characterDatabase.find(c => c.name === inputVal);
         
-        // 這裡可以加入選擇目標的邏輯，目前簡化為扣除對手陣營第一個活著的人
-        const target = units.find(u => u.team !== actor.team && u.hp > 0);
-        if (target) {
-            target.hp -= dmg;
-            if (target.hp < 0) target.hp = 0;
-            addLog(`${actor.name} 使用了 ${actionName}，造成 ${target.name} ${dmg} 點傷害`);
+        if (!template) {
+            alert("找不到該角色，請確認資料庫或名稱！");
+            return;
         }
+
+        // 複製一份新的角色物件 (Deep Copy)，避免互相影響
+        battlefield[side][index] = JSON.parse(JSON.stringify(template));
+        battlefield[side][index].maxHp = template.hp; // 設定最大血量
+        battlefield[side][index].acted = false; // 初始化行動狀態
+
+        addLog(`[系統] ${template.name} 加入了戰場 (位置: ${side}-${index+1})`);
+        renderBattlefield();
+    }
+
+    function removeChar(side, index) {
+        if(confirm("確定要移除這隻角色嗎？")) {
+            battlefield[side][index] = null;
+            renderBattlefield();
+        }
+    }
+
+    // ==========================================
+    // 4. 戰鬥核心：技能與指定攻擊
+    // ==========================================
+
+    function selectSkill(side, index, skillIndex) {
+        const actor = battlefield[side][index];
+        const skill = actor.skills[skillIndex];
+
+        if (actor.hp <= 0) return alert("該角色已陣亡");
+        if (actor.acted) return alert("本回合已行動過");
+
+        // 設定暫存動作
+        pendingAction = {
+            side: side,
+            index: index,
+            skill: skill,
+            actorName: actor.name
+        };
+
+        addLog(`[準備] ${actor.name} 準備使用 【${skill.name}】，請點選目標！`);
+
+        // 高亮顯示所有合法的敵方目標
+        const enemySide = (side === 'p1') ? 'p2' : 'p1';
+        highlightTargets(enemySide);
+    }
+
+    function highlightTargets(targetSide) {
+        // 移除舊的高亮
+        document.querySelectorAll('.slot').forEach(el => el.classList.remove('targetable'));
+
+        // 找出所有活著的敵方格子
+        document.querySelectorAll(`.slot[data-side="${targetSide}"]`).forEach(el => {
+            const idx = el.dataset.index;
+            const char = battlefield[targetSide][idx];
+            if (char && char.hp > 0) {
+                el.classList.add('targetable');
+            }
+        });
+    }
+
+    function resolveAttack(targetSide, targetIndex) {
+        if (!pendingAction) return;
+
+        const target = battlefield[targetSide][targetIndex];
+        const skill = pendingAction.skill;
+        const damage = skill.damage;
+
+        // 1. 扣血邏輯
+        target.hp -= damage;
+        if (target.hp < 0) target.hp = 0;
+
+        // 2. 標記發動者為「已行動」
+        battlefield[pendingAction.side][pendingAction.index].acted = true;
+
+        // 3. 紀錄 Log
+        addLog(`⚔️ ${pendingAction.actorName} 對 ${target.name} 使用了【${skill.name}】！`);
+        addLog(`💥 造成 ${damage} 點傷害。 ${target.name} 剩餘 HP: ${target.hp}`);
+
+        if (target.hp === 0) {
+            addLog(`💀 ${target.name} 倒下了！`);
+        }
+
+        // 4. 清除暫存與高亮
+        pendingAction = null;
+        document.querySelectorAll('.slot').forEach(el => el.classList.remove('targetable'));
         
-        actor.acted = true;
-        renderUnits();
+        // 5. 重新渲染畫面
+        renderBattlefield();
     }
 
-    function heal(id, amount) {
-        const u = units.find(u => u.id === id);
-        u.hp = Math.min(u.maxHp, u.hp + amount);
-        addLog(`${u.name} 回復了 ${amount} 點血量`);
-        renderUnits();
-    }
-
+    // ==========================================
+    // 5. 回合管理
+    // ==========================================
     function nextTurn() {
         currentTurn++;
         document.getElementById('turn-count').innerText = currentTurn;
-        units.forEach(u => u.acted = false);
+        
+        // 重置雙方所有人的 acted 狀態
+        ['p1', 'p2'].forEach(side => {
+            battlefield[side].forEach(char => {
+                if (char) char.acted = false;
+            });
+        });
+
         addLog(`--- 第 ${currentTurn} 回合開始 ---`);
-        renderUnits();
+        
+        // 清除任何未完成的選取狀態
+        pendingAction = null;
+        document.querySelectorAll('.slot').forEach(el => el.classList.remove('targetable'));
+        
+        renderBattlefield();
     }
 
     function addLog(msg) {
         const log = document.getElementById('combat-log');
-        log.innerHTML = `> ${msg}<br>` + log.innerHTML;
+        const time = new Date().toLocaleTimeString('zh-TW', { hour12: false });
+        log.innerHTML = `<span>[${time}] ${msg}</span><br>` + log.innerHTML;
     }
 
-    renderUnits();
 </script>
 
 </body>
