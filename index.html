@@ -2,83 +2,116 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>積動城市 - 戰鬥數位裁判台</title>
+    <title>積動城市 - 雙方對戰數位裁判系統</title>
     <style>
-        body { background: #1a1a1a; color: #fff; font-family: "Microsoft JhengHei", sans-serif; padding: 20px; }
-        .unit-card { border: 2px solid #00ff00; padding: 15px; border-radius: 10px; background: #222; margin-bottom: 20px; }
-        .hp-bar { width: 100%; height: 20px; background: #444; border-radius: 10px; overflow: hidden; margin: 10px 0; }
-        .hp-inner { width: 100%; height: 100%; background: #ff3333; transition: width 0.3s; }
-        button { background: #444; color: white; border: 1px solid #666; padding: 10px; margin: 5px; cursor: pointer; border-radius: 5px; }
-        button:hover { background: #00ff00; color: #000; }
-        .log { background: #000; padding: 10px; border: 1px solid #333; height: 150px; overflow-y: scroll; font-size: 14px; color: #0f0; }
+        :root { --p1-color: #00acee; --p2-color: #ff4444; }
+        body { background: #121212; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; }
+        .battle-field { display: flex; justify-content: space-around; width: 95%; margin-top: 20px; }
+        .side { width: 45%; border: 1px solid #333; padding: 10px; background: #1e1e1e; }
+        .turn-display { font-size: 24px; color: #f1c40f; margin: 20px; font-weight: bold; text-shadow: 0 0 10px #f1c40f; }
+        .char-card { border: 2px solid #444; margin: 10px 0; padding: 10px; border-radius: 8px; position: relative; }
+        .char-card.acted { opacity: 0.5; border-color: #000; background: #111; }
+        .hp-bar { width: 100%; height: 12px; background: #333; border-radius: 6px; overflow: hidden; margin: 5px 0; }
+        .hp-inner { width: 100%; height: 100%; background: #2ecc71; transition: width 0.3s; }
+        .controls { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+        button { font-size: 12px; padding: 5px; cursor: pointer; background: #333; color: #eee; border: 1px solid #555; }
+        .next-turn-btn { background: #f1c40f; color: #000; font-weight: bold; padding: 15px 40px; font-size: 18px; margin: 20px; border-radius: 30px; }
+        .log-box { width: 90%; background: #000; color: #0f0; padding: 10px; height: 100px; overflow-y: scroll; font-family: monospace; }
     </style>
 </head>
 <body>
 
-    <h2>🛡️ 積動城市：數位裁判台</h2>
+<div class="turn-display">⚔️ 第 <span id="turn-count">1</span> 回合 ⚔️</div>
 
-    <div class="unit-card">
-        <h3>敵方角色 (例如：魏延)</h3>
-        <div class="hp-bar"><div id="enemy-hp-bar" class="hp-inner"></div></div>
-        <p>血量: <span id="enemy-hp-text">1000</span> / 1000</p>
-        <p>狀態: <span id="enemy-status">正常</span></p>
+<div class="battle-field">
+    <div class="side" id="p1-side" style="border-top: 5px solid var(--p1-color);">
+        <h3 style="color: var(--p1-color)">我方陣營 (SPARK)</h3>
+        <div id="p1-slots"></div>
     </div>
 
-    <hr>
+    <div class="side" id="p2-side" style="border-top: 5px solid var(--p2-color);">
+        <h3 style="color: var(--p2-color)">敵方陣營 (Enemy)</h3>
+        <div id="p2-slots"></div>
+    </div>
+</div>
 
-    <div class="unit-card" style="border-color: #00acee;">
-        <h3>我方：英國遊騎兵小隊</h3>
-        <p>場上遊騎兵數量：
-            <select id="ranger-count">
-                <option value="1">1 隻</option>
-                <option value="2">2 隻</option>
-                <option value="3">3 隻</option>
-                <option value="4">4 隻</option>
-            </select>
-        </p>
+<button class="next-turn-btn" onclick="nextTurn()">結束本回合 / 下一回合</button>
+
+<div class="log-box" id="combat-log">戰鬥初始化完成... 請開始行動。</div>
+
+<script>
+    let currentTurn = 1;
+    let units = [
+        { id: 0, team: 1, name: "遊騎兵 A", hp: 500, maxHp: 500, acted: false },
+        { id: 1, team: 1, name: "遊騎兵 B", hp: 500, maxHp: 500, acted: false },
+        { id: 2, team: 1, name: "遊騎兵 C", hp: 500, maxHp: 500, acted: false },
+        { id: 3, team: 2, name: "魏延", hp: 1000, maxHp: 1000, acted: false },
+        { id: 4, team: 2, name: "敵方小兵 A", hp: 300, maxHp: 300, acted: false },
+        { id: 5, team: 2, name: "敵方小兵 B", hp: 300, maxHp: 300, acted: false }
+    ];
+
+    function renderUnits() {
+        document.getElementById('p1-slots').innerHTML = '';
+        document.getElementById('p2-slots').innerHTML = '';
         
-        <button onclick="attack('precision')">🎯 精準射擊 (100 點/無視避開)</button>
-        <button onclick="attack('barrage')">🔫 槍林彈雨 (150 點 x 數量)</button>
-        <button onclick="addLog('遊騎兵使用了疾風步伐，進入閃避狀態！')">🍃 疾風步伐 (防禦)</button>
-    </div>
+        units.forEach(u => {
+            const card = document.createElement('div');
+            card.className = `char-card ${u.acted ? 'acted' : ''}`;
+            const hpPercent = (u.hp / u.maxHp) * 100;
+            
+            card.innerHTML = `
+                <strong>${u.name}</strong> (HP: ${u.hp}/${u.maxHp})
+                <div class="hp-bar"><div class="hp-inner" style="width: ${hpPercent}%"></div></div>
+                <div class="controls">
+                    <button onclick="takeAction(${u.id}, 100, '攻擊')">一般攻擊</button>
+                    <button onclick="takeAction(${u.id}, 0, '防禦')">防禦/技能</button>
+                    <button onclick="heal(${u.id}, 50)">補血</button>
+                </div>
+            `;
+            
+            if (u.team === 1) document.getElementById('p1-slots').appendChild(card);
+            else document.getElementById('p2-slots').appendChild(card);
+        });
+    }
 
-    <h4>戰鬥紀錄：</h4>
-    <div id="combat-log" class="log">系統就緒...等待指令。</div>
-
-    <script>
-        let enemyHP = 1000;
-        let maxHP = 1000;
-
-        function attack(type) {
-            let damage = 0;
-            let logMsg = "";
-            let count = parseInt(document.getElementById('ranger-count').value);
-
-            if (type === 'precision') {
-                damage = 100;
-                logMsg = `遊騎兵發動【精準射擊】，造成 ${damage} 點真實傷害！`;
-            } else if (type === 'barrage') {
-                damage = 150 * count;
-                logMsg = `遊騎兵發動【槍林彈雨】，場上 ${count} 隻遊騎兵連動，共造成 ${damage} 點傷害！`;
-            }
-
-            enemyHP -= damage;
-            if (enemyHP < 0) enemyHP = 0;
-
-            updateUI(logMsg);
+    function takeAction(id, dmg, actionName) {
+        const actor = units.find(u => u.id === id);
+        if (actor.acted) return alert("該單位本回合已行動過！");
+        
+        // 這裡可以加入選擇目標的邏輯，目前簡化為扣除對手陣營第一個活著的人
+        const target = units.find(u => u.team !== actor.team && u.hp > 0);
+        if (target) {
+            target.hp -= dmg;
+            if (target.hp < 0) target.hp = 0;
+            addLog(`${actor.name} 使用了 ${actionName}，造成 ${target.name} ${dmg} 點傷害`);
         }
+        
+        actor.acted = true;
+        renderUnits();
+    }
 
-        function updateUI(msg) {
-            document.getElementById('enemy-hp-text').innerText = enemyHP;
-            let percent = (enemyHP / maxHP) * 100;
-            document.getElementById('enemy-hp-bar').style.width = percent + "%";
-            addLog(msg);
-        }
+    function heal(id, amount) {
+        const u = units.find(u => u.id === id);
+        u.hp = Math.min(u.maxHp, u.hp + amount);
+        addLog(`${u.name} 回復了 ${amount} 點血量`);
+        renderUnits();
+    }
 
-        function addLog(msg) {
-            let log = document.getElementById('combat-log');
-            log.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}<br>` + log.innerHTML;
-        }
-    </script>
+    function nextTurn() {
+        currentTurn++;
+        document.getElementById('turn-count').innerText = currentTurn;
+        units.forEach(u => u.acted = false);
+        addLog(`--- 第 ${currentTurn} 回合開始 ---`);
+        renderUnits();
+    }
+
+    function addLog(msg) {
+        const log = document.getElementById('combat-log');
+        log.innerHTML = `> ${msg}<br>` + log.innerHTML;
+    }
+
+    renderUnits();
+</script>
+
 </body>
 </html>
