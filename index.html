@@ -132,7 +132,6 @@
                 if (char.acted) slotDiv.classList.add('acted');
                 const hpPercent = (char.hp / char.maxHp) * 100;
 
-                // 通用狀態顯示：讀取 status 物件並顯示賸餘回合
                 let statusHtml = char.statuses.map(s => {
                     const label = s.id === 'weak' ? '虛弱' : s.id === 'dodge' ? '閃避' : s.id;
                     return `<span class="status-tag">${label}(${s.duration})</span>`;
@@ -177,7 +176,6 @@
         }
 
         if (skill.type === 'self_buff') {
-            // 通用處理：添加帶有 duration 的狀態物件
             actor.statuses.push({ id: skill.effect, duration: skill.duration || 1 }); 
             actor.acted = true;
             addLog(`> ${actor.name} 使用了 【${skill.name}】！`); 
@@ -196,35 +194,49 @@
         });
     }
 
+    // --- 核心修正：標準化傷害結算邏輯 ---
     function resolveAttack(targetSide, targetIndex) {
         if (!pendingAction) return;
         const actor = battlefield[pendingAction.side][pendingAction.index];
         const target = battlefield[targetSide][targetIndex];
         const skill = pendingAction.skill;
-        let finalDamage = skill.damage;
 
-        // 狀態判定：檢查物件陣列
-        if (actor.statuses.some(s => s.id === "weak")) { 
-            finalDamage = Math.floor(finalDamage * 0.5); 
+        // 1. 計算基礎傷害 (處理連動倍數)
+        let baseDamage = 0;
+        if (skill.type === "ranger_link") {
+            const rangerCount = battlefield[pendingAction.side].filter(u => u && u.tag === "ranger" && u.hp > 0).length;
+            baseDamage = 150 * rangerCount; 
+            globalRangerLinkLimit--;
+        } else {
+            baseDamage = skill.damage;
         }
+
+        // 2. 攻擊者狀態修正 (統一套用虛弱，影響所有傷害類型)
+        let modifiedDamage = baseDamage;
+        if (actor.statuses.some(s => s.id === "weak")) { 
+            modifiedDamage = Math.floor(modifiedDamage * 0.5); 
+        }
+
+        // 3. 防禦者狀態修正與效果施加
+        let finalDamage = modifiedDamage;
         if (skill.type === "enemy_debuff") { 
             target.statuses.push({ id: skill.effect, duration: skill.duration || 1 }); 
         }
-        if (skill.type === "ranger_link") {
-            const rangerCount = battlefield[pendingAction.side].filter(u => u && u.tag === "ranger" && u.hp > 0).length;
-            finalDamage = 150 * rangerCount; globalRangerLinkLimit--;
-        }
-        
-        // 閃避判定
+
+        // 閃避判定 (排除真實傷害)
         if (skill.type !== "true_dmg" && target.statuses.some(s => s.id === "dodge")) {
             finalDamage = 0; 
             target.statuses = target.statuses.filter(s => s.id !== "dodge");
             addLog(`> ${target.name} 透過閃避躲開了攻擊！`);
         }
 
+        // 4. 結算
         target.hp = Math.max(0, target.hp - finalDamage);
         actor.acted = true; 
-        if(finalDamage > 0) addLog(`> ${actor.name} 對 ${target.name} 造成 ${finalDamage} 點傷害。`);
+        
+        if(finalDamage > 0 || (finalDamage === 0 && skill.damage > 0)) {
+            addLog(`> ${actor.name} 對 ${target.name} 造成 ${finalDamage} 點傷害。`);
+        }
         if(target.hp <= 0) addLog(`> [魂滅] ${target.name} 已退出戰場。`);
 
         pendingAction = null;
@@ -240,11 +252,12 @@
             battlefield[side].forEach(char => { 
                 if (char) {
                     char.acted = false; 
-                    // 核心修正：每回合結束，所有狀態 duration -1
                     char.statuses.forEach(s => s.duration--);
-                    // 過濾並清除過期狀態
                     const expired = char.statuses.filter(s => s.duration <= 0);
-                    expired.forEach(s => addLog(`> ${char.name} 的狀態 [${s.id}] 已結束。`));
+                    expired.forEach(s => {
+                        const label = s.id === 'weak' ? '虛弱' : s.id === 'dodge' ? '閃避' : s.id;
+                        addLog(`> ${char.name} 的狀態 [${label}] 已結束。`);
+                    });
                     char.statuses = char.statuses.filter(s => s.duration > 0);
                 }
             }); 
