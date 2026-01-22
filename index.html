@@ -383,11 +383,11 @@
         renderBattlefield(); // 這裡會自動處理計數器的動態消失（如果角色陣亡）
     }
 
-  function nextTurn() {
+ function nextTurn() {
         currentTurn++;
         document.getElementById('turn-count').innerText = currentTurn;
         
-        // --- 規則修改：移除以下兩行，使技能次數不在回合結束時重置 ---
+        // --- 規則修改：次數不在回合結束時重置，維持每場對局僅 2 次 ---
         // sideResources.p1.rangerLinkLimit = 2;
         // sideResources.p2.rangerLinkLimit = 2;
         
@@ -407,10 +407,6 @@
         });
         
         addLog(`--- 第 ${currentTurn} 回合 (雙方行動重置，限定技能次數不恢復) ---`);
-        renderBattlefield();
-    }
-        
-        addLog(`--- 第 ${currentTurn} 回合 (雙方行動重置) ---`);
         renderBattlefield();
     }
 
