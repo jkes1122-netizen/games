@@ -2,66 +2,67 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>積動城市 SPARK - 數位裁判系統 v2.4</title>
+    <title>禁史召喚 - Summoner of Forbidden History</title>
     <style>
-        :root { --p1-bg: #0d1b2a; --p1-accent: #00acee; --p2-bg: #2b0d0d; --p2-accent: #ff4444; --text-color: #e0e1dd; }
+        :root { --p1-bg: #1a1a2e; --p1-accent: #e94560; --p2-bg: #16213e; --p2-accent: #0f3460; --text-color: #f1f1f1; }
         body { background: #000; color: var(--text-color); font-family: "Microsoft JhengHei", sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; height: 100vh; }
-        header { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 2px solid #333; }
-        .turn-badge { font-size: 1.5rem; background: #f1c40f; color: #000; padding: 5px 20px; border-radius: 20px; font-weight: bold; }
-        .battlefield { display: flex; flex: 1; gap: 10px; margin-top: 10px; overflow: hidden; }
-        .side { flex: 1; padding: 10px; border-radius: 10px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
-        #side-p1 { background: var(--p1-bg); border: 2px solid var(--p1-accent); }
-        #side-p2 { background: var(--p2-bg); border: 2px solid var(--p2-accent); }
-        .slot { background: rgba(255,255,255,0.05); border: 1px dashed #555; border-radius: 8px; min-height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; transition: 0.3s; }
-        .char-card { width: 100%; padding: 10px; box-sizing: border-box; }
-        .char-name { font-weight: bold; font-size: 1.1em; color: #fff; }
-        .status-tag { background: #e67e22; color: #fff; font-size: 0.7rem; padding: 2px 5px; border-radius: 3px; margin-left: 5px; }
-        .hp-container { width: 100%; background: #333; height: 10px; border-radius: 5px; margin: 5px 0; overflow: hidden; }
-        .hp-fill { height: 100%; background: #2ecc71; width: 100%; transition: width 0.3s; }
-        .skill-list { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 5px; }
-        .skill-btn { background: #444; color: #fff; border: 1px solid #666; padding: 5px; font-size: 0.8rem; cursor: pointer; border-radius: 4px; }
-        .skill-btn:hover:not(:disabled) { background: #666; }
-        .skill-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-        .slot.acted { opacity: 0.5; filter: grayscale(0.8); pointer-events: none; }
-        .slot.targetable { border: 2px solid #f1c40f; box-shadow: 0 0 15px #f1c40f; cursor: crosshair; animation: pulse 0.8s infinite; }
-        .slot.dead { filter: grayscale(1); opacity: 0.3; }
-        .control-panel { height: 150px; display: flex; gap: 10px; margin-top: 10px; }
-        .log-box { flex: 3; background: #111; border: 1px solid #333; padding: 10px; overflow-y: scroll; font-family: monospace; color: #0f0; font-size: 0.9rem; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 3px solid #e94560; background: #1a1a2e; }
+        .turn-badge { font-size: 1.5rem; background: #e94560; color: #fff; padding: 5px 25px; border-radius: 5px; font-weight: bold; box-shadow: 0 0 15px #e94560; }
+        .battlefield { display: flex; flex: 1; gap: 15px; margin-top: 15px; overflow: hidden; }
+        .side { flex: 1; padding: 15px; border-radius: 12px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); }
+        #side-p1 { background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); }
+        #side-p2 { background: linear-gradient(180deg, #16213e 0%, #1a1a2e 100%); }
+        .slot { background: rgba(0,0,0,0.4); border: 2px dashed #444; border-radius: 10px; min-height: 140px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; transition: all 0.3s; }
+        .char-card { width: 100%; padding: 12px; box-sizing: border-box; }
+        .char-name { font-weight: bold; font-size: 1.2em; color: #00d2ff; text-shadow: 0 0 5px #00d2ff; }
+        .status-tag { background: #ff9f43; color: #000; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: bold; }
+        .hp-container { width: 100%; background: #222; height: 12px; border-radius: 6px; margin: 8px 0; border: 1px solid #444; overflow: hidden; }
+        .hp-fill { height: 100%; background: linear-gradient(90deg, #ff4d4d, #2ecc71); width: 100%; transition: width 0.4s ease; }
+        .skill-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+        .skill-btn { background: #0f3460; color: #fff; border: 1px solid #16213e; padding: 6px; font-size: 0.85rem; cursor: pointer; border-radius: 4px; transition: 0.2s; }
+        .skill-btn:hover:not(:disabled) { background: #e94560; border-color: #fff; }
+        .skill-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+        .slot.acted { opacity: 0.4; filter: contrast(0.8); pointer-events: none; }
+        .slot.targetable { border: 2px solid #f1c40f; box-shadow: 0 0 20px #f1c40f; transform: scale(1.02); z-index: 10; cursor: crosshair; }
+        .slot.dead { filter: grayscale(1) brightness(0.5); }
+        .control-panel { height: 160px; display: flex; gap: 15px; margin-top: 15px; }
+        .log-box { flex: 3; background: #000; border: 1px solid #e94560; padding: 12px; overflow-y: scroll; font-family: 'Courier New', monospace; color: #00ff00; font-size: 0.95rem; border-radius: 8px; }
         .btn-group { flex: 1; display: flex; flex-direction: column; gap: 10px; }
-        .main-btn { flex: 2; background: #f1c40f; color: #000; border: none; font-size: 1.1rem; font-weight: bold; cursor: pointer; border-radius: 5px; }
-        .reset-btn { flex: 1; background: #c0392b; color: #fff; border: none; font-size: 0.9rem; cursor: pointer; border-radius: 5px; }
-        .add-btn { background: transparent; color: #777; border: none; font-size: 2rem; cursor: pointer; }
-        .add-interface { width: 90%; display: none; flex-direction: column; gap: 5px; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+        .main-btn { flex: 2; background: #e94560; color: #fff; border: none; font-size: 1.2rem; font-weight: bold; cursor: pointer; border-radius: 8px; text-transform: uppercase; letter-spacing: 2px; }
+        .reset-btn { flex: 1; background: #444; color: #ccc; border: 1px solid #666; font-size: 0.9rem; cursor: pointer; border-radius: 8px; }
+        .reset-btn:hover { background: #ff4d4d; color: #fff; }
+        .add-btn { background: #333; color: #fff; border: none; width: 50px; height: 50px; border-radius: 50%; font-size: 2rem; cursor: pointer; }
+        .add-interface { width: 90%; display: none; flex-direction: column; gap: 8px; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; }
+        input { background: #000; color: #fff; border: 1px solid #444; padding: 5px; }
     </style>
 </head>
 <body>
 
 <header>
-    <div><h2 style="margin:0;">SPARK 積動城市</h2><small>數位裁判台 v2.4 (全局技能限制)</small></div>
+    <div><h1 style="margin:0; letter-spacing: 3px;">禁史召喚</h1><small>FORBIDDEN HISTORY SUMMONER - 數位裁判系統</small></div>
     <div style="text-align: right">
-        <div class="turn-badge">第 <span id="turn-count">1</span> 回合</div>
-        <div id="link-count-display" style="color: #ff4444; font-size: 0.9rem; margin-top: 5px;">「槍林彈雨」剩餘次數：2 / 2</div>
+        <div class="turn-badge">ROUND <span id="turn-count">1</span></div>
+        <div id="link-count-display" style="color: #00d2ff; font-size: 0.9rem; margin-top: 8px; font-weight: bold;">「槍林彈雨」剩餘次數：2 / 2</div>
     </div>
 </header>
 
 <div class="battlefield">
-    <div class="side" id="side-p1"><h3 style="margin:0; text-align:center; color:var(--p1-accent)">我方隊伍</h3></div>
-    <div class="side" id="side-p2"><h3 style="margin:0; text-align:center; color:var(--p2-accent)">敵方隊伍</h3></div>
+    <div class="side" id="side-p1"><h3 style="margin:0; text-align:center; color:#00d2ff">召喚師 陣營</h3></div>
+    <div class="side" id="side-p2"><h3 style="margin:0; text-align:center; color:#ff4d4d">禁史 陣營</h3></div>
 </div>
 
 <div class="control-panel">
-    <div class="log-box" id="combat-log">> 戰場初始化完成。</div>
+    <div class="log-box" id="combat-log">> 禁忌之門已開啟，請召喚角色...</div>
     <div class="btn-group">
-        <button class="main-btn" onclick="nextTurn()">結束回合<br>Next Turn</button>
-        <button class="reset-btn" onclick="resetBattlefield()">清理對局 / 重置戰場</button>
+        <button class="main-btn" onclick="nextTurn()">結束回合<br>END ROUND</button>
+        <button class="reset-btn" onclick="resetBattlefield()">清理對局 (重置戰場)</button>
     </div>
 </div>
 
 <datalist id="char-list-data"></datalist>
 
 <script>
-    // 1. 角色大數據庫 (在這裡加入你的新角色)
+    // 1. 《禁史召喚》大數據庫
     const characterDatabase = [
         {
             id: "ranger", name: "英國遊騎兵", hp: 500, tag: "ranger",
@@ -72,20 +73,26 @@
             ]
         },
         {
-            id: "guan_yu", name: "關羽", hp: 1200, tag: "general",
+            id: "guan_yu", name: "關羽", hp: 1200, tag: "hero",
             skills: [
                 { name: "青龍偃月", damage: 200, type: "physical" },
                 { name: "武聖威嚴", damage: 0, type: "enemy_debuff", effect: "weak" }
             ]
         },
-        { id: "wei_yan", name: "魏延", hp: 1000, tag: "general", skills: [{ name: "斬月閃", damage: 150, type: "physical" }] },
-        { id: "soldier_a", name: "一般小兵", hp: 200, tag: "mob", skills: [{ name: "突刺", damage: 50, type: "physical" }] }
+        {
+            id: "wei_yan", name: "魏延", hp: 1000, tag: "hero",
+            skills: [{ name: "斬月閃", damage: 150, type: "physical" }]
+        },
+        {
+            id: "soldier", name: "一般小兵", hp: 200, tag: "mob",
+            skills: [{ name: "突刺", damage: 50, type: "physical" }]
+        }
     ];
 
     let battlefield = { p1: [null, null, null, null, null], p2: [null, null, null, null, null] };
     let currentTurn = 1;
     let pendingAction = null;
-    let globalRangerLinkLimit = 2; // 全局限制：整場只能用 2 次
+    let globalRangerLinkLimit = 2; 
 
     window.onload = function() { initDatalist(); renderBattlefield(); };
 
@@ -112,18 +119,18 @@
             slotDiv.className = `slot`;
             slotDiv.dataset.side = sideKey; slotDiv.dataset.index = index;
             if (!char) {
-                slotDiv.innerHTML = `<button class="add-btn" onclick="toggleAddMenu('${sideKey}', ${index})">+</button><div class="add-interface" id="add-menu-${sideKey}-${index}"><input list="char-list-data" placeholder="搜尋角色..." id="input-${sideKey}-${index}"><button onclick="addCharacter('${sideKey}', ${index})">加入</button></div>`;
+                slotDiv.innerHTML = `<button class="add-btn" onclick="toggleAddMenu('${sideKey}', ${index})">+</button><div class="add-interface" id="add-menu-${sideKey}-${index}"><input list="char-list-data" id="input-${sideKey}-${index}"><button onclick="addCharacter('${sideKey}', ${index})">召喚</button></div>`;
             } else {
                 if (char.hp <= 0) slotDiv.classList.add('dead');
                 if (char.acted) slotDiv.classList.add('acted');
                 const hpPercent = (char.hp / char.maxHp) * 100;
-                let statusHtml = char.statuses.map(s => `<span class="status-tag">${s === 'weak' ? '虛弱' : s}</span>`).join('');
+                let statusHtml = char.statuses.map(s => `<span class="status-tag">${s === 'weak' ? '虛弱' : s === 'dodge' ? '閃避' : s}</span>`).join('');
                 let skillsHtml = char.skills.map((s, sIdx) => {
                     const isDisabled = (s.type === 'ranger_link' && globalRangerLinkLimit <= 0) ? 'disabled' : '';
                     return `<button class="skill-btn" ${isDisabled} onclick="selectSkill('${sideKey}', ${index}, ${sIdx})">${s.name}</button>`;
                 }).join('');
 
-                slotDiv.innerHTML = `<div class="char-card"><div class="char-header"><span class="char-name">${char.name}${statusHtml}</span><small onclick="removeChar('${sideKey}', ${index})" style="cursor:pointer">❌</small></div><div class="hp-container"><div class="hp-fill" style="width: ${hpPercent}%"></div></div><small>HP: ${char.hp}/${char.maxHp}</small><div class="skill-list">${skillsHtml}</div></div>`;
+                slotDiv.innerHTML = `<div class="char-card"><div class="char-header"><span class="char-name">${char.name}${statusHtml}</span><small onclick="removeChar('${sideKey}', ${index})" style="cursor:pointer; opacity:0.3">移除</small></div><div class="hp-container"><div class="hp-fill" style="width: ${hpPercent}%"></div></div><small>生命值: ${char.hp} / ${char.maxHp}</small><div class="skill-list">${skillsHtml}</div></div>`;
                 slotDiv.onclick = function(e) { if(e.target.tagName !== 'BUTTON' && pendingAction && slotDiv.classList.contains('targetable')) resolveAttack(sideKey, index); }
             }
             container.appendChild(slotDiv);
@@ -145,18 +152,15 @@
         const actor = battlefield[side][index];
         const skill = actor.skills[skillIndex];
         if (actor.hp <= 0 || actor.acted) return;
-
-        if (skill.type === "ranger_link" && globalRangerLinkLimit <= 0) {
-            addLog(`❌ 此局聯動次數已用盡！`); return;
-        }
+        if (skill.type === "ranger_link" && globalRangerLinkLimit <= 0) { addLog(`❌ 聯動能量已耗盡。`); return; }
 
         if (skill.type === 'self_buff') {
             actor.statuses.push(skill.effect); actor.acted = true;
-            addLog(`[技能] ${actor.name} 使用了 【${skill.name}】！`); renderBattlefield(); return;
+            addLog(`> ${actor.name} 使用了 【${skill.name}】！`); renderBattlefield(); return;
         }
 
         pendingAction = { side, index, skill, actorName: actor.name };
-        addLog(`[準備] ${actor.name} ${skill.name}，請選目標。`);
+        addLog(`> ${actor.name} 準備施放 ${skill.name}，請選擇目標...`);
         highlightTargets(side === 'p1' ? 'p2' : 'p1');
     }
 
@@ -174,24 +178,22 @@
         const skill = pendingAction.skill;
         let finalDamage = skill.damage;
 
-        if (actor.statuses.includes("weak")) {
-            finalDamage = Math.floor(finalDamage * 0.5);
-            actor.statuses = actor.statuses.filter(s => s !== "weak");
-        }
+        if (actor.statuses.includes("weak")) { finalDamage = Math.floor(finalDamage * 0.5); actor.statuses = actor.statuses.filter(s => s !== "weak"); }
         if (skill.type === "enemy_debuff") { target.statuses.push(skill.effect); }
         if (skill.type === "ranger_link") {
             const rangerCount = battlefield[pendingAction.side].filter(u => u && u.tag === "ranger" && u.hp > 0).length;
-            finalDamage = 150 * rangerCount;
-            globalRangerLinkLimit--; // 【整局次數扣除】
+            finalDamage = 150 * rangerCount; globalRangerLinkLimit--;
         }
         if (skill.type !== "true_dmg" && target.statuses.includes("dodge")) {
             finalDamage = 0; target.statuses = target.statuses.filter(s => s !== "dodge");
-            addLog(`[閃避] ${target.name} 避開攻擊！`);
+            addLog(`> ${target.name} 透過閃避躲開了攻擊！`);
         }
 
         target.hp = Math.max(0, target.hp - finalDamage);
         actor.acted = true;
-        addLog(`⚔️ ${actor.name} 造成 ${finalDamage} 傷害。`);
+        if(finalDamage > 0) addLog(`> ${actor.name} 對 ${target.name} 造成 ${finalDamage} 點傷害。`);
+        if(target.hp <= 0) addLog(`> [魂滅] ${target.name} 已退出戰場。`);
+
         pendingAction = null;
         document.querySelectorAll('.slot').forEach(el => el.classList.remove('targetable'));
         renderBattlefield();
@@ -201,25 +203,23 @@
         currentTurn++;
         document.getElementById('turn-count').innerText = currentTurn;
         ['p1', 'p2'].forEach(side => { battlefield[side].forEach(char => { if (char) char.acted = false; }); });
-        addLog(`--- 第 ${currentTurn} 回合 ---`);
+        addLog(`--- 第 ${currentTurn} 回合 (雙方行動重置) ---`);
         renderBattlefield();
     }
 
-    // 【新增功能】清理對局 / 重置戰場
     function resetBattlefield() {
-        if (confirm("確定要清空整場對局嗎？這會移除所有角色並重置回合與技能次數。")) {
+        if (confirm("是否確定清空戰場，重啟《禁史召喚》對局？")) {
             battlefield = { p1: [null, null, null, null, null], p2: [null, null, null, null, null] };
-            currentTurn = 1;
-            globalRangerLinkLimit = 2; // 重置聯動次數
+            currentTurn = 1; globalRangerLinkLimit = 2;
             document.getElementById('turn-count').innerText = currentTurn;
-            document.getElementById('combat-log').innerHTML = "> 戰場已清空。請重新配置角色。";
+            document.getElementById('combat-log').innerHTML = "> 戰場已清空。請重新召喚角色。";
             renderBattlefield();
         }
     }
 
     function addLog(msg) {
         const log = document.getElementById('combat-log');
-        log.innerHTML = `> ${msg}<br>` + log.innerHTML;
+        log.innerHTML = msg + "<br>" + log.innerHTML;
     }
 </script>
 </body>
