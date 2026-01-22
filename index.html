@@ -29,7 +29,6 @@
         .hp-fill { height: 100%; background: linear-gradient(90deg, #ff4d4d, #2ecc71); width: 100%; transition: width 0.4s ease; }
         .skill-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
         
-        /* 技能按鈕與標籤 */
         .skill-btn { background: #0f3460; color: #fff; border: 1px solid #16213e; padding: 6px; font-size: 0.85rem; cursor: pointer; border-radius: 4px; transition: 0.2s; text-align: left; }
         .skill-btn:hover:not(:disabled) { background: #e94560; border-color: #fff; }
         .skill-btn:disabled { opacity: 0.2; cursor: not-allowed; }
@@ -51,7 +50,7 @@
         .add-interface { width: 90%; display: none; flex-direction: column; gap: 8px; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; }
         input { background: #000; color: #fff; border: 1px solid #444; padding: 5px; }
         .limit-badge {
-            background: rgba(0, 210, 255, 0.15); border: 1px solid #00d2ff; color: #00d2ff;
+            background: rgba(255, 255, 255, 0.05); border: 1px solid #666; 
             padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; animation: fadeIn 0.5s;
         }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
@@ -166,20 +165,39 @@
         });
     }
 
+    // --- 核心微調：動態渲染計數器 ---
     function renderBattlefield() {
         renderSide('p1', document.getElementById('side-p1'));
         renderSide('p2', document.getElementById('side-p2'));
         const counterContainer = document.getElementById('dynamic-counters');
         counterContainer.innerHTML = ''; 
+
         ['p1', 'p2'].forEach(side => {
             const sideName = side === 'p1' ? '我方' : '敵方';
-            const badge = document.createElement('div');
-            badge.className = 'limit-badge';
-            badge.style.borderColor = side === 'p1' ? '#00d2ff' : '#ff4d4d';
-            badge.style.color = side === 'p1' ? '#00d2ff' : '#ff4d4d';
-            badge.innerText = `${sideName} 槍林彈雨：${sideResources[side].rangerLinkLimit} / 2`;
-            counterContainer.appendChild(badge);
+            const sideColor = side === 'p1' ? '#00d2ff' : '#ff4d4d';
+            
+            // 基礎架構設計：未來這裡可以加入多種技能的檢查
+            // 1. 檢查英國遊騎兵
+            const hasActiveRanger = battlefield[side].some(u => u && u.tag === "ranger" && u.hp > 0);
+            if (hasActiveRanger) {
+                createLimitBadge(counterContainer, `${sideName} 槍林彈雨`, sideResources[side].rangerLinkLimit, 2, sideColor);
+            }
+
+            // 未來範例：如果你加了「魔導師」角色且有魔力限制
+            // if (battlefield[side].some(u => u && u.tag === "mage" && u.hp > 0)) {
+            //     createLimitBadge(counterContainer, `${sideName} 秘法值`, sideResources[side].mana, 100, sideColor);
+            // }
         });
+    }
+
+    // 通用的計數器生成函式，方便以後擴充
+    function createLimitBadge(container, label, current, max, color) {
+        const badge = document.createElement('div');
+        badge.className = 'limit-badge';
+        badge.style.borderColor = color;
+        badge.style.color = color;
+        badge.innerText = `${label}：${current} / ${max}`;
+        container.appendChild(badge);
     }
 
     function renderSide(sideKey, container) {
@@ -202,7 +220,6 @@
                     return `<span class="status-tag">${label}(${s.duration})</span>`;
                 }).join('');
 
-                // 普攻按鈕處理
                 let normalAtkBtn = "";
                 if (char.role !== "守誓者") {
                     const isDisabled = char.acted ? 'disabled' : '';
@@ -241,8 +258,6 @@
         if (!template) return;
         
         let newChar = JSON.parse(JSON.stringify(template));
-        
-        // --- 核心計算：職業基礎 + 品質加成 ---
         const roleBase = ROLE_BASES[newChar.role] || { hp: 1000, atk: 10 };
         const qualityAdd = QUALITY_BONUS[newChar.quality] || { hp: 0, atk: 0 };
         
@@ -298,7 +313,6 @@
         const target = battlefield[targetSide][targetIndex];
         const skill = pendingAction.skill;
 
-        // 1. 計算基礎傷害
         let baseDamage = 0;
         if (skill.type === "ranger_link") {
             const side = pendingAction.side;
@@ -311,13 +325,11 @@
             baseDamage = skill.damage;
         }
 
-        // 2. 攻擊者狀態修正 (虛弱影響)
         let modifiedDamage = baseDamage;
         if (actor.statuses.some(s => s.id === "weak")) { 
             modifiedDamage = Math.floor(modifiedDamage * 0.5); 
         }
 
-        // 3. 防禦者狀態修正
         let finalDamage = modifiedDamage;
         if (skill.type === "enemy_debuff") { 
             target.statuses.push({ id: skill.effect, duration: skill.duration || 1 }); 
@@ -329,18 +341,19 @@
             addLog(`> ${target.name} 透過閃避躲開了攻擊！`);
         }
 
-        // 4. 結算
         target.hp = Math.max(0, target.hp - finalDamage);
         actor.acted = true; 
         
         if(finalDamage > 0 || (finalDamage === 0 && skill.damage > 0)) {
             addLog(`> ${actor.name} 對 ${target.name} 造成 ${finalDamage} 點傷害。`);
         }
-        if(target.hp <= 0) addLog(`> [魂滅] ${target.name} 已退出戰場。`);
+        if(target.hp <= 0) {
+            addLog(`> [魂滅] ${target.name} 已退出戰場。`);
+        }
 
         pendingAction = null;
         document.querySelectorAll('.slot').forEach(el => el.classList.remove('targetable'));
-        renderBattlefield();
+        renderBattlefield(); // 這裡會自動處理計數器的動態消失（如果角色陣亡）
     }
 
     function nextTurn() {
