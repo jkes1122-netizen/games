@@ -22,7 +22,7 @@
         .skill-btn { background: #0f3460; color: #fff; border: 1px solid #16213e; padding: 6px; font-size: 0.85rem; cursor: pointer; border-radius: 4px; transition: 0.2s; }
         .skill-btn:hover:not(:disabled) { background: #e94560; border-color: #fff; }
         .skill-btn:disabled { opacity: 0.2; cursor: not-allowed; }
-        .slot.acted { opacity: 0.4; filter: contrast(0.8); pointer-events: none; }
+        .slot.acted { opacity: 0.4; filter: contrast(0.8);}
         .slot.targetable { border: 2px solid #f1c40f; box-shadow: 0 0 20px #f1c40f; transform: scale(1.02); z-index: 10; cursor: crosshair; }
         .slot.dead { filter: grayscale(1) brightness(0.5); }
         .control-panel { height: 160px; display: flex; gap: 15px; margin-top: 15px; }
@@ -160,27 +160,39 @@
     }
     
     function removeChar(side, index) { battlefield[side][index] = null; renderBattlefield(); }
-
-    function selectSkill(side, index, skillIndex) {
+function selectSkill(side, index, skillIndex) {
         const actor = battlefield[side][index];
+        // 修正：增加 actor 存在判定，並確保已行動角色不能點擊技能
+        if (!actor || actor.hp <= 0 || actor.acted) return;
+
         const skill = actor.skills[skillIndex];
-        if (actor.hp <= 0 || actor.acted) return;
-        if (skill.type === "ranger_link" && globalRangerLinkLimit <= 0) { addLog(`❌ 聯動能量已耗盡。`); return; }
+        if (skill.type === "ranger_link" && globalRangerLinkLimit <= 0) { 
+            addLog(`❌ 聯動能量已耗盡。`); 
+            return; 
+        }
 
         if (skill.type === 'self_buff') {
-            actor.statuses.push(skill.effect); actor.acted = true;
-            addLog(`> ${actor.name} 使用了 【${skill.name}】！`); renderBattlefield(); return;
+            actor.statuses.push(skill.effect); 
+            actor.acted = true;
+            addLog(`> ${actor.name} 使用了 【${skill.name}】！`); 
+            renderBattlefield(); 
+            return;
         }
 
         pendingAction = { side, index, skill, actorName: actor.name };
         addLog(`> ${actor.name} 準備施放 ${skill.name}，請選擇目標...`);
+        
+        // 呼叫高亮函式，現在它只管對方有沒有血，不管對方有沒有動過
         highlightTargets(side === 'p1' ? 'p2' : 'p1');
     }
 
     function highlightTargets(targetSide) {
         document.querySelectorAll(`.slot[data-side="${targetSide}"]`).forEach(el => {
             const char = battlefield[targetSide][el.dataset.index];
-            if (char && char.hp > 0) el.classList.add('targetable');
+            // 修正：只要角色活著 (hp > 0)，不論是否 acted 都要能被選為目標
+            if (char && char.hp > 0) {
+                el.classList.add('targetable');
+            }
         });
     }
 
@@ -191,23 +203,36 @@
         const skill = pendingAction.skill;
         let finalDamage = skill.damage;
 
-        if (actor.statuses.includes("weak")) { finalDamage = Math.floor(finalDamage * 0.5); actor.statuses = actor.statuses.filter(s => s !== "weak"); }
-        if (skill.type === "enemy_debuff") { target.statuses.push(skill.effect); }
+        // 狀態判定邏輯
+        if (actor.statuses.includes("weak")) { 
+            finalDamage = Math.floor(finalDamage * 0.5); 
+            actor.statuses = actor.statuses.filter(s => s !== "weak"); 
+        }
+        if (skill.type === "enemy_debuff") { 
+            target.statuses.push(skill.effect); 
+        }
         if (skill.type === "ranger_link") {
             const rangerCount = battlefield[pendingAction.side].filter(u => u && u.tag === "ranger" && u.hp > 0).length;
-            finalDamage = 150 * rangerCount; globalRangerLinkLimit--;
+            finalDamage = 150 * rangerCount; 
+            globalRangerLinkLimit--;
         }
+        
+        // 閃避判定
         if (skill.type !== "true_dmg" && target.statuses.includes("dodge")) {
-            finalDamage = 0; target.statuses = target.statuses.filter(s => s !== "dodge");
+            finalDamage = 0; 
+            target.statuses = target.statuses.filter(s => s !== "dodge");
             addLog(`> ${target.name} 透過閃避躲開了攻擊！`);
         }
 
+        // 結算傷害
         target.hp = Math.max(0, target.hp - finalDamage);
-        actor.acted = true;
+        actor.acted = true; // 攻擊者標記為已行動
+        
         if(finalDamage > 0) addLog(`> ${actor.name} 對 ${target.name} 造成 ${finalDamage} 點傷害。`);
         if(target.hp <= 0) addLog(`> [魂滅] ${target.name} 已退出戰場。`);
 
         pendingAction = null;
+        // 清除所有高亮狀態
         document.querySelectorAll('.slot').forEach(el => el.classList.remove('targetable'));
         renderBattlefield();
     }
@@ -215,7 +240,10 @@
     function nextTurn() {
         currentTurn++;
         document.getElementById('turn-count').innerText = currentTurn;
-        ['p1', 'p2'].forEach(side => { battlefield[side].forEach(char => { if (char) char.acted = false; }); });
+        // 重置所有角色的行動狀態
+        ['p1', 'p2'].forEach(side => { 
+            battlefield[side].forEach(char => { if (char) char.acted = false; }); 
+        });
         addLog(`--- 第 ${currentTurn} 回合 ---`);
         renderBattlefield();
     }
@@ -223,16 +251,13 @@
     function resetBattlefield() {
         if (confirm("是否確定重啟《禁史召喚》對局？")) {
             battlefield = { p1: [null, null, null, null, null], p2: [null, null, null, null, null] };
-            currentTurn = 1; globalRangerLinkLimit = 2;
+            currentTurn = 1; 
+            globalRangerLinkLimit = 2; // 重置全局限制
             document.getElementById('turn-count').innerText = currentTurn;
             document.getElementById('combat-log').innerHTML = "> 戰場已清空。";
             renderBattlefield();
         }
     }
-
-    function addLog(msg) {
-        const log = document.getElementById('combat-log');
-        log.innerHTML = msg + "<br>" + log.innerHTML;
     }
 </script>
 </body>
