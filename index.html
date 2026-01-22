@@ -35,15 +35,10 @@
         .add-interface { width: 90%; display: none; flex-direction: column; gap: 8px; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; }
         input { background: #000; color: #fff; border: 1px solid #444; padding: 5px; }
         .limit-badge {
-    background: rgba(0, 210, 255, 0.15);
-    border: 1px solid #00d2ff;
-    color: #00d2ff;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    animation: fadeIn 0.5s;
-}
-@keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+            background: rgba(0, 210, 255, 0.15); border: 1px solid #00d2ff; color: #00d2ff;
+            padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -52,11 +47,9 @@
     <div><h1 style="margin:0; letter-spacing: 3px;">禁史召喚</h1><small>FORBIDDEN HISTORY SUMMONER - 數位裁判系統</small></div>
     <div style="text-align: right">
         <div class="turn-badge">ROUND <span id="turn-count">1</span></div>
-       <div style="text-align: right">
-    <div class="turn-badge">ROUND <span id="turn-count">1</span></div>
-    <div id="dynamic-counters" style="margin-top: 8px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+        <div id="dynamic-counters" style="margin-top: 8px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+            </div>
     </div>
-</div>
 </header>
 
 <div class="battlefield">
@@ -75,7 +68,6 @@
 <datalist id="char-list-data"></datalist>
 
 <script>
-    // 1. 《禁史召喚》大數據庫
     const characterDatabase = [
         {
             id: "ranger", name: "英國遊騎兵", hp: 500, tag: "ranger",
@@ -92,14 +84,8 @@
                 { name: "武聖威嚴", damage: 0, type: "enemy_debuff", effect: "weak" }
             ]
         },
-        {
-            id: "wei_yan", name: "魏延", hp: 1000, tag: "hero",
-            skills: [{ name: "斬月閃", damage: 150, type: "physical" }]
-        },
-        {
-            id: "soldier", name: "一般小兵", hp: 200, tag: "mob",
-            skills: [{ name: "突刺", damage: 50, type: "physical" }]
-        }
+        { id: "wei_yan", name: "魏延", hp: 1000, tag: "hero", skills: [{ name: "斬月閃", damage: 150, type: "physical" }] },
+        { id: "soldier", name: "一般小兵", hp: 200, tag: "mob", skills: [{ name: "突刺", damage: 50, type: "physical" }] }
     ];
 
     let battlefield = { p1: [null, null, null, null, null], p2: [null, null, null, null, null] };
@@ -118,24 +104,22 @@
         });
     }
 
- function renderBattlefield() {
-    renderSide('p1', document.getElementById('side-p1'));
-    renderSide('p2', document.getElementById('side-p2'));
-    
-    // --- 動態計數器邏輯 ---
-    const counterContainer = document.getElementById('dynamic-counters');
-    counterContainer.innerHTML = ''; // 先清空
+    function renderBattlefield() {
+        renderSide('p1', document.getElementById('side-p1'));
+        renderSide('p2', document.getElementById('side-p2'));
+        
+        const counterContainer = document.getElementById('dynamic-counters');
+        counterContainer.innerHTML = ''; 
 
-    // 檢查全戰場是否有人擁有「ranger」標籤
-    const allUnits = [...battlefield.p1, ...battlefield.p2].filter(u => u !== null);
-    const hasRanger = allUnits.some(u => u.tag === "ranger");
+        const allUnits = [...battlefield.p1, ...battlefield.p2].filter(u => u !== null);
+        const hasRanger = allUnits.some(u => u.tag === "ranger");
 
-    // 如果場上有遊騎兵，才顯示計數器
-    if (hasRanger) {
-        const badge = document.createElement('div');
-        badge.className = 'limit-badge';
-        badge.innerText = `槍林彈雨限制：${globalRangerLinkLimit} / 2`;
-        counterContainer.appendChild(badge);
+        if (hasRanger) {
+            const badge = document.createElement('div');
+            badge.className = 'limit-badge';
+            badge.innerText = `槍林彈雨限制：${globalRangerLinkLimit} / 2`;
+            counterContainer.appendChild(badge);
+        }
     }
 
     function renderSide(sideKey, container) {
@@ -157,7 +141,7 @@
                     return `<button class="skill-btn" ${isDisabled} onclick="selectSkill('${sideKey}', ${index}, ${sIdx})">${s.name}</button>`;
                 }).join('');
 
-                slotDiv.innerHTML = `<div class="char-card"><div class="char-header"><span class="char-name">${char.name}${statusHtml}</span><small onclick="removeChar('${sideKey}', ${index})" style="cursor:pointer; opacity:0.3">移除</small></div><div class="hp-container"><div class="hp-fill" style="width: ${hpPercent}%"></div></div><small>生命值: ${char.hp} / ${char.maxHp}</small><div class="skill-list">${skillsHtml}</div></div>`;
+                slotDiv.innerHTML = `<div class="char-card"><div class="char-header"><span class="char-name">${char.name}${statusHtml}</span><small onclick="removeChar('${sideKey}', ${index})" style="cursor:pointer; opacity:0.3">移除</small></div><div class="hp-container"><div class="hp-fill" style="width: ${hpPercent}%"></div></div><small>HP: ${char.hp}/${char.maxHp}</small><div class="skill-list">${skillsHtml}</div></div>`;
                 slotDiv.onclick = function(e) { if(e.target.tagName !== 'BUTTON' && pendingAction && slotDiv.classList.contains('targetable')) resolveAttack(sideKey, index); }
             }
             container.appendChild(slotDiv);
@@ -165,6 +149,7 @@
     }
 
     function toggleAddMenu(side, index) { document.getElementById(`add-menu-${side}-${index}`).style.display = 'flex'; }
+    
     function addCharacter(side, index) {
         const inputVal = document.getElementById(`input-${side}-${index}`).value;
         const template = characterDatabase.find(c => c.name === inputVal);
@@ -173,6 +158,7 @@
         battlefield[side][index].maxHp = template.hp; battlefield[side][index].acted = false; battlefield[side][index].statuses = [];
         renderBattlefield();
     }
+    
     function removeChar(side, index) { battlefield[side][index] = null; renderBattlefield(); }
 
     function selectSkill(side, index, skillIndex) {
@@ -230,16 +216,16 @@
         currentTurn++;
         document.getElementById('turn-count').innerText = currentTurn;
         ['p1', 'p2'].forEach(side => { battlefield[side].forEach(char => { if (char) char.acted = false; }); });
-        addLog(`--- 第 ${currentTurn} 回合 (雙方行動重置) ---`);
+        addLog(`--- 第 ${currentTurn} 回合 ---`);
         renderBattlefield();
     }
 
     function resetBattlefield() {
-        if (confirm("是否確定清空戰場，重啟《禁史召喚》對局？")) {
+        if (confirm("是否確定重啟《禁史召喚》對局？")) {
             battlefield = { p1: [null, null, null, null, null], p2: [null, null, null, null, null] };
             currentTurn = 1; globalRangerLinkLimit = 2;
             document.getElementById('turn-count').innerText = currentTurn;
-            document.getElementById('combat-log').innerHTML = "> 戰場已清空。請重新召喚角色。";
+            document.getElementById('combat-log').innerHTML = "> 戰場已清空。";
             renderBattlefield();
         }
     }
