@@ -34,6 +34,16 @@
         .add-btn { background: #333; color: #fff; border: none; width: 50px; height: 50px; border-radius: 50%; font-size: 2rem; cursor: pointer; }
         .add-interface { width: 90%; display: none; flex-direction: column; gap: 8px; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; }
         input { background: #000; color: #fff; border: 1px solid #444; padding: 5px; }
+        .limit-badge {
+    background: rgba(0, 210, 255, 0.15);
+    border: 1px solid #00d2ff;
+    color: #00d2ff;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    animation: fadeIn 0.5s;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -42,8 +52,11 @@
     <div><h1 style="margin:0; letter-spacing: 3px;">禁史召喚</h1><small>FORBIDDEN HISTORY SUMMONER - 數位裁判系統</small></div>
     <div style="text-align: right">
         <div class="turn-badge">ROUND <span id="turn-count">1</span></div>
-        <div id="link-count-display" style="color: #00d2ff; font-size: 0.9rem; margin-top: 8px; font-weight: bold;">「槍林彈雨」剩餘次數：2 / 2</div>
+       <div style="text-align: right">
+    <div class="turn-badge">ROUND <span id="turn-count">1</span></div>
+    <div id="dynamic-counters" style="margin-top: 8px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
     </div>
+</div>
 </header>
 
 <div class="battlefield">
@@ -105,10 +118,24 @@
         });
     }
 
-    function renderBattlefield() {
-        renderSide('p1', document.getElementById('side-p1'));
-        renderSide('p2', document.getElementById('side-p2'));
-        document.getElementById('link-count-display').innerText = `「槍林彈雨」剩餘次數：${globalRangerLinkLimit} / 2`;
+ function renderBattlefield() {
+    renderSide('p1', document.getElementById('side-p1'));
+    renderSide('p2', document.getElementById('side-p2'));
+    
+    // --- 動態計數器邏輯 ---
+    const counterContainer = document.getElementById('dynamic-counters');
+    counterContainer.innerHTML = ''; // 先清空
+
+    // 檢查全戰場是否有人擁有「ranger」標籤
+    const allUnits = [...battlefield.p1, ...battlefield.p2].filter(u => u !== null);
+    const hasRanger = allUnits.some(u => u.tag === "ranger");
+
+    // 如果場上有遊騎兵，才顯示計數器
+    if (hasRanger) {
+        const badge = document.createElement('div');
+        badge.className = 'limit-badge';
+        badge.innerText = `槍林彈雨限制：${globalRangerLinkLimit} / 2`;
+        counterContainer.appendChild(badge);
     }
 
     function renderSide(sideKey, container) {
