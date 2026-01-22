@@ -15,7 +15,7 @@
         .slot { background: rgba(0,0,0,0.4); border: 2px dashed #444; border-radius: 10px; min-height: 140px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; transition: all 0.3s; }
         .char-card { width: 100%; padding: 12px; box-sizing: border-box; }
         .char-name { font-weight: bold; font-size: 1.2em; color: #00d2ff; text-shadow: 0 0 5px #00d2ff; }
-        .status-tag { background: #ff9f43; color: #000; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: bold; }
+        .status-tag { background: #ff9f43; color: #000; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: bold; border: 1px solid #fff; }
         .hp-container { width: 100%; background: #222; height: 12px; border-radius: 6px; margin: 8px 0; border: 1px solid #444; overflow: hidden; }
         .hp-fill { height: 100%; background: linear-gradient(90deg, #ff4d4d, #2ecc71); width: 100%; transition: width 0.4s ease; }
         .skill-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
@@ -73,14 +73,14 @@
             skills: [
                 { name: "精準射擊", damage: 100, type: "true_dmg" },
                 { name: "槍林彈雨", damage: 150, type: "ranger_link" },
-                { name: "疾風步伐", damage: 0, type: "self_buff", effect: "dodge" }
+                { name: "疾風步伐", damage: 0, type: "self_buff", effect: "dodge", duration: 2 }
             ]
         },
         {
             id: "guan_yu", name: "關羽", hp: 1200, tag: "hero",
             skills: [
                 { name: "青龍偃月", damage: 200, type: "physical" },
-                { name: "武聖威嚴", damage: 0, type: "enemy_debuff", effect: "weak" }
+                { name: "武聖威嚴", damage: 0, type: "enemy_debuff", effect: "weak", duration: 3 }
             ]
         },
         { id: "wei_yan", name: "魏延", hp: 1000, tag: "hero", skills: [{ name: "斬月閃", damage: 150, type: "physical" }] },
@@ -106,13 +106,10 @@
     function renderBattlefield() {
         renderSide('p1', document.getElementById('side-p1'));
         renderSide('p2', document.getElementById('side-p2'));
-        
         const counterContainer = document.getElementById('dynamic-counters');
         counterContainer.innerHTML = ''; 
-
         const allUnits = [...battlefield.p1, ...battlefield.p2].filter(u => u !== null);
         const hasRanger = allUnits.some(u => u.tag === "ranger");
-
         if (hasRanger) {
             const badge = document.createElement('div');
             badge.className = 'limit-badge';
@@ -134,9 +131,14 @@
                 if (char.hp <= 0) slotDiv.classList.add('dead');
                 if (char.acted) slotDiv.classList.add('acted');
                 const hpPercent = (char.hp / char.maxHp) * 100;
-                let statusHtml = char.statuses.map(s => `<span class="status-tag">${s === 'weak' ? '虛弱' : s === 'dodge' ? '閃避' : s}</span>`).join('');
+
+                // 通用狀態顯示：讀取 status 物件並顯示賸餘回合
+                let statusHtml = char.statuses.map(s => {
+                    const label = s.id === 'weak' ? '虛弱' : s.id === 'dodge' ? '閃避' : s.id;
+                    return `<span class="status-tag">${label}(${s.duration})</span>`;
+                }).join('');
+
                 let skillsHtml = char.skills.map((s, sIdx) => {
-                    // 修正：如果角色已行動，或者聯動次數用完，按鈕才禁用
                     const isRangerLimit = (s.type === 'ranger_link' && globalRangerLinkLimit <= 0);
                     const isDisabled = (char.acted || isRangerLimit) ? 'disabled' : '';
                     return `<button class="skill-btn" ${isDisabled} onclick="selectSkill('${sideKey}', ${index}, ${sIdx})">${s.name}</button>`;
@@ -144,7 +146,6 @@
 
                 slotDiv.innerHTML = `<div class="char-card"><div class="char-header"><span class="char-name">${char.name}${statusHtml}</span><small onclick="removeChar('${sideKey}', ${index})" style="cursor:pointer; opacity:0.3">移除</small></div><div class="hp-container"><div class="hp-fill" style="width: ${hpPercent}%"></div></div><small>HP: ${char.hp}/${char.maxHp}</small><div class="skill-list">${skillsHtml}</div></div>`;
                 
-                // 修正：只要帶有 targetable 類別，點擊格子就能觸發攻擊（不管有沒有 acted）
                 slotDiv.onclick = function(e) { 
                     if(e.target.tagName !== 'BUTTON' && pendingAction && slotDiv.classList.contains('targetable')) {
                         resolveAttack(sideKey, index); 
@@ -156,7 +157,6 @@
     }
 
     function toggleAddMenu(side, index) { document.getElementById(`add-menu-${side}-${index}`).style.display = 'flex'; }
-    
     function addCharacter(side, index) {
         const inputVal = document.getElementById(`input-${side}-${index}`).value;
         const template = characterDatabase.find(c => c.name === inputVal);
@@ -165,25 +165,23 @@
         battlefield[side][index].maxHp = template.hp; battlefield[side][index].acted = false; battlefield[side][index].statuses = [];
         renderBattlefield();
     }
-    
     function removeChar(side, index) { battlefield[side][index] = null; renderBattlefield(); }
 
     function selectSkill(side, index, skillIndex) {
         const actor = battlefield[side][index];
         if (!actor || actor.hp <= 0 || actor.acted) return;
-
         const skill = actor.skills[skillIndex];
+
         if (skill.type === "ranger_link" && globalRangerLinkLimit <= 0) { 
-            addLog(`❌ 聯動能量已耗盡。`); 
-            return; 
+            addLog(`❌ 聯動能量已耗盡。`); return; 
         }
 
         if (skill.type === 'self_buff') {
-            actor.statuses.push(skill.effect); 
+            // 通用處理：添加帶有 duration 的狀態物件
+            actor.statuses.push({ id: skill.effect, duration: skill.duration || 1 }); 
             actor.acted = true;
             addLog(`> ${actor.name} 使用了 【${skill.name}】！`); 
-            renderBattlefield(); 
-            return;
+            renderBattlefield(); return;
         }
 
         pendingAction = { side, index, skill, actorName: actor.name };
@@ -194,9 +192,7 @@
     function highlightTargets(targetSide) {
         document.querySelectorAll(`.slot[data-side="${targetSide}"]`).forEach(el => {
             const char = battlefield[targetSide][el.dataset.index];
-            if (char && char.hp > 0) {
-                el.classList.add('targetable');
-            }
+            if (char && char.hp > 0) el.classList.add('targetable');
         });
     }
 
@@ -207,28 +203,27 @@
         const skill = pendingAction.skill;
         let finalDamage = skill.damage;
 
-        if (actor.statuses.includes("weak")) { 
+        // 狀態判定：檢查物件陣列
+        if (actor.statuses.some(s => s.id === "weak")) { 
             finalDamage = Math.floor(finalDamage * 0.5); 
-            actor.statuses = actor.statuses.filter(s => s !== "weak"); 
         }
         if (skill.type === "enemy_debuff") { 
-            target.statuses.push(skill.effect); 
+            target.statuses.push({ id: skill.effect, duration: skill.duration || 1 }); 
         }
         if (skill.type === "ranger_link") {
             const rangerCount = battlefield[pendingAction.side].filter(u => u && u.tag === "ranger" && u.hp > 0).length;
-            finalDamage = 150 * rangerCount; 
-            globalRangerLinkLimit--;
+            finalDamage = 150 * rangerCount; globalRangerLinkLimit--;
         }
         
-        if (skill.type !== "true_dmg" && target.statuses.includes("dodge")) {
+        // 閃避判定
+        if (skill.type !== "true_dmg" && target.statuses.some(s => s.id === "dodge")) {
             finalDamage = 0; 
-            target.statuses = target.statuses.filter(s => s !== "dodge");
+            target.statuses = target.statuses.filter(s => s.id !== "dodge");
             addLog(`> ${target.name} 透過閃避躲開了攻擊！`);
         }
 
         target.hp = Math.max(0, target.hp - finalDamage);
         actor.acted = true; 
-        
         if(finalDamage > 0) addLog(`> ${actor.name} 對 ${target.name} 造成 ${finalDamage} 點傷害。`);
         if(target.hp <= 0) addLog(`> [魂滅] ${target.name} 已退出戰場。`);
 
@@ -240,18 +235,29 @@
     function nextTurn() {
         currentTurn++;
         document.getElementById('turn-count').innerText = currentTurn;
+        
         ['p1', 'p2'].forEach(side => { 
-            battlefield[side].forEach(char => { if (char) char.acted = false; }); 
+            battlefield[side].forEach(char => { 
+                if (char) {
+                    char.acted = false; 
+                    // 核心修正：每回合結束，所有狀態 duration -1
+                    char.statuses.forEach(s => s.duration--);
+                    // 過濾並清除過期狀態
+                    const expired = char.statuses.filter(s => s.duration <= 0);
+                    expired.forEach(s => addLog(`> ${char.name} 的狀態 [${s.id}] 已結束。`));
+                    char.statuses = char.statuses.filter(s => s.duration > 0);
+                }
+            }); 
         });
-        addLog(`--- 第 ${currentTurn} 回合 ---`);
+        
+        addLog(`--- 第 ${currentTurn} 回合 (雙方行動重置) ---`);
         renderBattlefield();
     }
 
     function resetBattlefield() {
         if (confirm("是否確定重啟《禁史召喚》對局？")) {
             battlefield = { p1: [null, null, null, null, null], p2: [null, null, null, null, null] };
-            currentTurn = 1; 
-            globalRangerLinkLimit = 2;
+            currentTurn = 1; globalRangerLinkLimit = 2;
             document.getElementById('turn-count').innerText = currentTurn;
             document.getElementById('combat-log').innerHTML = "> 戰場已清空。";
             renderBattlefield();
