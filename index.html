@@ -12,8 +12,29 @@
         .side { flex: 1; padding: 15px; border-radius: 12px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); }
         #side-p1 { background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); }
         #side-p2 { background: linear-gradient(180deg, #16213e 0%, #1a1a2e 100%); }
-        .slot { background: rgba(0,0,0,0.4); border: 2px dashed #444; border-radius: 10px; min-height: 140px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; transition: all 0.3s; }
-        .char-card { width: 100%; padding: 12px; box-sizing: border-box; }
+       .slot {
+    background: rgba(0,0,0,0.4);
+    border: 2px dashed #444;
+    border-radius: 10px;
+    /* 修改：將 min-height 從 140px 增加到 200px，確保 4 個技能有足夠空間 */
+    min-height: 200px; 
+    display: flex;
+    flex-direction: column;
+    /* 修改：改為從頂部對齊，避免內容垂直置中導致的排版錯亂 */
+    justify-content: flex-start; 
+    align-items: center;
+    position: relative;
+    transition: all 0.3s;
+    padding: 10px 0; /* 增加上下內距 */
+}
+       .char-card {
+    width: 100%;
+    padding: 12px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* 讓卡片撐滿 slot */
+}
         .char-name { font-weight: bold; font-size: 1.2em; text-shadow: 0 0 5px rgba(255,255,255,0.3); }
         
         /* 品質顏色 */
@@ -27,7 +48,13 @@
         .status-tag { background: #ff9f43; color: #000; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: bold; border: 1px solid #fff; }
         .hp-container { width: 100%; background: #222; height: 12px; border-radius: 6px; margin: 8px 0; border: 1px solid #444; overflow: hidden; }
         .hp-fill { height: 100%; background: linear-gradient(90deg, #ff4d4d, #2ecc71); width: 100%; transition: width 0.4s ease; }
-        .skill-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+       .skill-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* 維持兩欄排列 */
+    gap: 10px; /* 稍微增加間距 */
+    margin-top: 12px;
+    width: 100%;
+}
         
         .skill-btn { background: #0f3460; color: #fff; border: 1px solid #16213e; padding: 6px; font-size: 0.85rem; cursor: pointer; border-radius: 4px; transition: 0.2s; text-align: left; }
         .skill-btn:hover:not(:disabled) { background: #e94560; border-color: #fff; }
